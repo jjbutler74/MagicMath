@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Magic Math</title>
+	<link href="bootstrap/css/bootstrap.css" rel="stylesheet" />
+	<!-- <link rel="stylesheet" href="css/amelia-bootstrap.min.css"> -->
+	<link href="css/site.css" rel="stylesheet" />
+</head>
+<body>
+  <div id="page">
+    <header class="container">
+      <div id="menu" class="navbar navbar-default navbar-fixed-top">
+        <div class="navbar-header">
+          <button class="btn btn-success btn-lg navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+            <span class="glyphicon glyphicon-chevron-down"></span>
+          </button>
+          <div id="logo">
+			<h2 class="hidden-xs">Magic Math welcomes <span id="CurrentUser"></span></h2>
+			<h2 class="visible-xs">Magic Math</span></h2>
+          </div>
+        </div>
+        <div class="navbar-collapse collapse">
+          <ul class="nav navbar-nav navbar-right">
+            <li class="nav"><button id="change-user-button" class="btn btn-info btn-lg">Change or Add User</button></li>
+            <li class="nav"><button id="see-report-button" class="btn btn-info btn-lg">See Report</button></li>
+          </ul>
+        </div>
+      </div>
+    </header>
+	
+    <noscript>
+		<span style="font-size: 2em; font-weight: bold; margin: 3em; padding: 3em;">
+        <br />            
+        For full functionality of this site it is necessary to enable JavaScript. 
+		<br />  
+		Here are the <a href="http://www.enable-javascript.com/" target="_blank">instructions how to enable JavaScript in your web browser</a>.
+		</span>
+    </noscript>
+	
+    <section id="body" class="container" style="display: none;">
+	    <div class="row">
+			<div class="col-xs-2 col-xs-offset-4">
+				<span id="message" class="message-text"></span>
+			</div>
+			<div class="col-xs-2">
+				<span id="topNumber" class="main-numbers pull-right"></span>
+			</div>
+		</div>
+		<div class="row">
+			<div class="col-xs-1 col-xs-offset-4">
+				<span id="operator" class="main-numbers"></span>
+			</div>
+			<div class="col-xs-3">
+				<span id="bottomNumber" class="main-numbers pull-right"></span>
+			</div>
+		</div>
+		<div class="row">
+			<div class="col-xs-4 col-xs-offset-4 main-line">
+				<form id="submitted-guess">
+					<input id="guess" class="input-numbers" type="text" pattern="[0-9]*" autocomplete="off" autofocus="autofocus" maxlength="3" />
+				</form>
+			</div>
+		</div>
+    </section>
+
+	<section id="change-user-section" class="container center-message" tabindex="-1" style="display: none;">
+		<div id="change-user-message" class="message-text" tabindex="-1"></div>
+		<div id="change-user-buttons" class="user-buttons" tabindex="-1"></div>
+		
+		<form id="add-user">
+			<input id="new-user" type="text" autocomplete="off" maxlength="16" />
+			<input type="submit" class="btn btn-primary" value="Add">
+		</form>
+	</section>
+	
+	<section id="start-game-section" class="container center-message" tabindex="-1" style="display: none;">
+		<button id="start-button" class="btn btn-info btn-xl" tabindex="-1">Start</button>	
+	</section>
+
+	<section id="game-over-section" class="container center-message" tabindex="-1" style="display: none;">
+		<div id="game-over-message" class="message-text" tabindex="-1"></div>
+		<button id="play-again-button" class="btn btn-info btn-lg" tabindex="-1">Play again?</button>	
+	</section>
+	
+	<section id="report-section" class="container center-message" tabindex="-1" style="display: none;">
+		<canvas id="myChart"  width="800" height="400"></canvas>
+		<span class="legend">
+			<div class="legend-text">Number of Wrong Answers</div>
+			<div class="legend-square-1"></div>
+			<div class="legend-text">Total Time</div>
+			<div class="legend-square-2"></div>
+		</span>
+	</section>
+	
+  </div>
+	
+  <div class="modal" id="msgDialog" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <a href="#" class="close" data-dismiss="modal">&times;</a>
+          <h4>Magic Math</h4>
+        </div>
+        <div class="modal-body">
+          <p id="dialogMsg"></p>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-primary" data-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <div class="modal" id="sentDialog" tabindex="-1">
+    <div class="modal-dialog modal-sm">
+      <div class="modal-content">
+        <div class="modal-header">
+          <a href="#" class="close" data-dismiss="modal">&times;</a>
+          <h4>Magic Math</h4>
+        </div>
+        <div class="modal-body">
+          <p>That User already Exist</p>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-success" data-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="text/javascript" src="scripts/jquery-1.11.0.js"></script>	
+  <script type="text/javascript" src="bootstrap/js/bootstrap.js"></script>	
+  <script type="text/javascript" src="scripts/Chart.js"></script>
+  <script type="text/javascript" src="scripts/site.js"></script>	
+  <script type="text/javascript">
+	$(document).ready(function () {
+	  initProgram();
+	});
+  </script>
+</body>
+</html>
