@@ -44,7 +44,7 @@ $("#see-report-button").on("click", function () {
 
 // Add User Submit
 $('#add-user').submit(function( event ) {
-  newUser = ($('#new-user').val()).trim();
+  var newUser = ($('#new-user').val()).trim();
   if (newUser == '') {return false;} // If blank, skip it
   
   // Check if name = you!
