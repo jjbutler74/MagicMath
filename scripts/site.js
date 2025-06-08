@@ -120,7 +120,7 @@ function ChangeUser() {
   // Get User Array
   var currentUserList = JSON.parse(localStorage.getItem('currentUserList'));
   if (currentUserList != null) {
-    var userMessage = 'Change or Add User';
+    userMessage = 'Change or Add User';
     $.each( currentUserList, function( key, value ) {
       userHtml = userHtml + '<p><button type="button" value="' + value + '" class="user-btn btn btn-info btn-lg">' + value + '</button>'
 	  userHtml = userHtml + ' <button type="button" value="' + value + '" class="user-delete-btn btn btn-xs"><span class="glyphicon glyphicon-trash"></span></button></p>'
