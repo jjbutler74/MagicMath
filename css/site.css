@@ -13,7 +13,7 @@ header {
 
 .btn-xl {
     padding: 18px 28px;
-    font-size: 64px; 
+    font-size: 64px;
     line-height: normal;
     -webkit-border-radius: 8px;
        -moz-border-radius: 8px;
@@ -31,7 +31,7 @@ header {
 }
 
 .main-line {
-  border-top: 4px solid #000000; 
+  border-top: 4px solid #000000;
 }
 
 .main-numbers {
@@ -54,7 +54,7 @@ header {
 
 .center-message {
 	padding-top: 40px;
-	text-align: center; 
+	text-align: center;
 }
 
 .user-buttons {
@@ -66,14 +66,14 @@ header {
 }
 
 .legend-text {
-	display: inline-block; 
+	display: inline-block;
 	margin-top: 16px;
 	vertical-align:top;
     font-weight: bold;
 }
 
 .legend-square-1 {
-	display: inline-block; 
+	display: inline-block;
 	margin-top: 18px;
 	margin-right: 28px;
 	width: 16px;
@@ -84,7 +84,7 @@ header {
 }
 
 .legend-square-2 {
-	display: inline-block; 
+	display: inline-block;
 	margin-top: 18px;
 	width: 16px;
 	height: 16px;
