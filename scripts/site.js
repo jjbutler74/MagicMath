@@ -64,7 +64,6 @@ $('#add-user').submit(function( event ) {
     var userPos = $.inArray(newUser, currentUserList);
 	if (userPos != -1)
 	{
-	  // alert("User already exist!!!");
 	  $('#sentDialog').modal('show');
 	  {return false;}
 	}
@@ -275,8 +274,7 @@ function SeeReport() {
 
     chartDates.push(formatDate);
 	chartNumberWrong.push(value.NumberWrong);
-	chartTime.push(value.TotalTime);
-    //alert('Date: ' + formatDate + ' Number wrong: ' + value.NumberWrong + ' Total time: ' + value.TotalTime);
+        chartTime.push(value.TotalTime);
     });
   }
 
