@@ -1,7 +1,7 @@
 function initProgram() {
   // Set global number of problems
   window.numberOfProblems = 10;
-   
+
   // Get Current User
   var currentUser = localStorage.getItem('currentUser');
   if (currentUser == null) {
@@ -11,17 +11,17 @@ function initProgram() {
 	$('#CurrentUser').text(currentUser);
 	$('#start-game-section').show();
   }
-}	
+}
 
 // Submitted Guess
 $('#submitted-guess').submit(function( event ) {
   if (window.processing) {return false;} // Prevent multiple submission
   var answerNum = $('#topNumber').text() * $('#bottomNumber').text();
-  
+
   if ($('#guess').val() == '') {
 	return false; // skip blank answers
   }
-  
+
   if ($('#guess').val() == answerNum) {
     // Right answer
 	RightAnswer();
@@ -46,14 +46,14 @@ $("#see-report-button").on("click", function () {
 $('#add-user').submit(function( event ) {
   var newUser = ($('#new-user').val()).trim();
   if (newUser == '') {return false;} // If blank, skip it
-  
+
   // Check if name = you!
   if (newUser == 'you!') {
   	$("#dialogMsg").text("Don't be a smarty pants, pick another name!");
     $("#msgDialog").modal('show');
 	return false;
-  } 
-    
+  }
+
   // Get User List
   var currentUserList = JSON.parse(localStorage.getItem('currentUserList'));
   if (currentUserList == null) {
@@ -65,7 +65,7 @@ $('#add-user').submit(function( event ) {
 	if (userPos != -1)
 	{
 	  // alert("User already exist!!!");
-	  $('#sentDialog').modal('show'); 
+	  $('#sentDialog').modal('show');
 	  {return false;}
 	}
     currentUserList.push(newUser);
@@ -73,10 +73,10 @@ $('#add-user').submit(function( event ) {
   localStorage.setItem('currentUserList', JSON.stringify(currentUserList));
 
   // Set User and Start New Game
-  NewUser(newUser);  
+  NewUser(newUser);
   return false;
 });
-	
+
 // Start button
 $("#start-button").on("click", function () {
   $('#start-game-section').hide();
@@ -88,7 +88,7 @@ $("#play-again-button").on("click", function () {
   $('#game-over-section').hide();
   StartGame();
 });
-	
+
 // Only allow numbers for answers
 $('#guess').keyup(function(e) {
   if (/\D/g.test(this.value)) {
@@ -101,8 +101,8 @@ function StartGame() {
   window.currentProblem = 1;
   window.missedProblems = 0;
   window.startTime = new Date().getTime();
-  window.totalTime = 0; 
-    
+  window.totalTime = 0;
+
   // Get 1st problem
   GetProblem();
 }
@@ -114,7 +114,7 @@ function ChangeUser() {
   $('#report-section').hide()
   $('#new-user').val('');
   $('#change-user-section').show()
-  
+
   var currentUser = localStorage.getItem('currentUser');
   var userHtml = '';
   var userMessage = 'Add User';
@@ -127,7 +127,7 @@ function ChangeUser() {
 	  userHtml = userHtml + ' <button type="button" value="' + value + '" class="user-delete-btn btn btn-xs"><span class="glyphicon glyphicon-trash"></span></button></p>'
     });
   }
-  
+
   $('#change-user-buttons').html(userHtml);
   $('#change-user-message').text(userMessage);
 }
@@ -143,10 +143,10 @@ $('#change-user-buttons').on('click', '.user-btn', function () {
 $('#change-user-buttons').on('click', '.user-delete-btn', function () {
   userToDelete = $(this).attr("value");
   DeleteUser(userToDelete);
-    
+
   // Remove User from screen list
   $(this).parent().remove(); // or $(this).closest('p').remove();
-  
+
   // If deleted user is the current user
   var currentUser = $('#CurrentUser').text();
   if(userToDelete ==  currentUser) {
@@ -160,7 +160,7 @@ function NoUser() {
 }
 
 function NewUser(currentUser) {
-  localStorage.setItem('currentUser', currentUser);	
+  localStorage.setItem('currentUser', currentUser);
   $('#CurrentUser').text(currentUser);
   $('#change-user-section').hide()
   $('#report-section').hide()
@@ -168,7 +168,7 @@ function NewUser(currentUser) {
 }
 
 function DeleteUser(userToDelete) {
-  // Delete Users from Array 
+  // Delete Users from Array
   // Get User List
   var currentUserList = JSON.parse(localStorage.getItem('currentUserList'));
   if (currentUserList != null) {
@@ -179,9 +179,9 @@ function DeleteUser(userToDelete) {
     // Save User List
     localStorage.setItem('currentUserList', JSON.stringify(currentUserList));
   }
-  
-  // Delete Users Log 
-  var key = userToDelete + 'Log';	
+
+  // Delete Users Log
+  var key = userToDelete + 'Log';
   localStorage.removeItem(key);
 }
 
@@ -190,9 +190,9 @@ function GetProblem() {
 	window.startCurrentProblem = new Date().getTime();
 	var topNum = Math.floor((Math.random() * 13)); // 0 to 12
 	var bottomNum = Math.floor((Math.random() * 13)); // 0 to 12
-	$('#topNumber').text(topNum); 
+	$('#topNumber').text(topNum);
 	$('#operator').text('X');
-	$('#bottomNumber').text(bottomNum); 
+	$('#bottomNumber').text(bottomNum);
 	$('#guess').val('');
 	$('#message').hide();
 	$('#guess').focus();
@@ -203,10 +203,10 @@ function RightAnswer() {
 	window.processing = true;
 	$('#message').text('You got it!');
 	$('#message').fadeIn().delay(500).fadeOut();
-	
+
 	window.totalTime = (new Date().getTime() - window.startTime) / 1000;
 	var totalTimeRounded = Math.round(window.totalTime).toFixed(0);
-	
+
 	if (window.currentProblem < window.numberOfProblems) {
 	  window.currentProblem = window.currentProblem + 1;
 	  setTimeout(function(){GetProblem()},1000);
@@ -217,18 +217,18 @@ function RightAnswer() {
 			' problems and it only took you ' + totalTimeRounded + ' seconds!');
 		$('#game-over-section').fadeIn()
 	  },1000);
-		
+
       LogGame();
 	}
 }
 
 function LogGame() {
-  var key = $('#CurrentUser').text() + 'Log';		  
+  var key = $('#CurrentUser').text() + 'Log';
   var log = {};
   log.Date = new Date();
   log.NumberWrong = window.missedProblems;
   log.TotalTime = window.totalTime;
-    		  	  
+
   var userLog = JSON.parse(localStorage.getItem(key));
   if (userLog == null) {
     var logs = [];
@@ -245,12 +245,12 @@ function WrongAnswer(answerNum) {
     window.currentTry = window.currentTry + 1;
 	if (window.currentTry < 4) {
 	  $('#message').text('Try Again');
-	  $('#message').fadeIn().delay(500).fadeOut();	
+	  $('#message').fadeIn().delay(500).fadeOut();
 	} else {
 	  $('#message').text('The Answer is ' + answerNum);
-	  $('#message').fadeIn().delay(1000).fadeOut();	
+	  $('#message').fadeIn().delay(1000).fadeOut();
 	}
-    $('#guess').select();	  
+    $('#guess').select();
 }
 
 function SeeReport() {
@@ -259,27 +259,27 @@ function SeeReport() {
   $('#game-over-section').hide();
   $('#change-user-section').hide()
   $('#report-section').show()
-  
-  var key = $('#CurrentUser').text() + 'Log';	
+
+  var key = $('#CurrentUser').text() + 'Log';
   var userLog = JSON.parse(localStorage.getItem(key));
-  
+
   var chartDates = [];
   var chartNumberWrong = [];
   var chartTime = [];
-  
+
   if (userLog != null) {
     $.each( userLog, function( key, value ) {
-		
+
 	date = new Date(value.Date);
 	formatDate = date.toLocaleDateString("en-US");
-	
+
     chartDates.push(formatDate);
 	chartNumberWrong.push(value.NumberWrong);
 	chartTime.push(value.TotalTime);
     //alert('Date: ' + formatDate + ' Number wrong: ' + value.NumberWrong + ' Total time: ' + value.TotalTime);
     });
   }
-  
+
   var data = {
 	labels : chartDates,
 	datasets : [
@@ -299,7 +299,7 @@ function SeeReport() {
 		}
 	]
   };
-  
+
   //Get context with jQuery - using jQuery's .get() method.
   var ctx = $("#myChart").get(0).getContext("2d");
   //This will get the first returned node in the jQuery collection.
@@ -314,8 +314,8 @@ function DrawChart(ctx, data) {
 	// Get largest chart value (wrong answers and time)
 	var wrongArray = data.datasets[0].data;
 	var timeArray = data.datasets[1].data;
-	var combinedArray = wrongArray.concat(timeArray); 
-	var largest = Math.max.apply(Math, combinedArray); 
+	var combinedArray = wrongArray.concat(timeArray);
+	var largest = Math.max.apply(Math, combinedArray);
 
 	var scaleOverride = false;
 	var scaleSteps;
@@ -330,22 +330,22 @@ function DrawChart(ctx, data) {
 			scaleOverride = true;
 			scaleSteps = 10;
 			scaleStepWidth = 2;
-			break;	
+			break;
 		case (largest > 20 && largest <= 40):
 			scaleOverride = true;
 			scaleSteps = 10;
 			scaleStepWidth = 4;
-			break;	
+			break;
 		case (largest > 40 && largest <= 60):
 			scaleOverride = true;
 			scaleSteps = 10;
 			scaleStepWidth = 6;
-			break;	
+			break;
 		case (largest > 60 && largest <= 80):
 			scaleOverride = true;
 			scaleSteps = 10;
 			scaleStepWidth = 8;
-			break;	
+			break;
 		case (largest > 80 && largest <= 100):
 			scaleOverride = true;
 			scaleSteps = 10;
@@ -360,7 +360,7 @@ function DrawChart(ctx, data) {
 			break;
 	}
 
-	var options = { 
+	var options = {
 		scaleOverride: scaleOverride,
 		scaleSteps: scaleSteps,
 		scaleStepWidth: scaleStepWidth,
