@@ -62,12 +62,11 @@ $('#add-user').submit(function( event ) {
     currentUserList = userArray;
   } else {
     var userPos = $.inArray(newUser, currentUserList);
-	if (userPos != -1)
-	{
-	  // alert("User already exist!!!");
-	  $('#sentDialog').modal('show'); 
-	  {return false;}
-	}
+        if (userPos != -1)
+        {
+          $('#sentDialog').modal('show');
+          {return false;}
+        }
     currentUserList.push(newUser);
   }
   localStorage.setItem('currentUserList', JSON.stringify(currentUserList));
@@ -275,8 +274,7 @@ function SeeReport() {
 	
     chartDates.push(formatDate);
 	chartNumberWrong.push(value.NumberWrong);
-	chartTime.push(value.TotalTime);
-    //alert('Date: ' + formatDate + ' Number wrong: ' + value.NumberWrong + ' Total time: ' + value.TotalTime);
+        chartTime.push(value.TotalTime);
     });
   }
   
