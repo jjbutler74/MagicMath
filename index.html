@@ -30,16 +30,16 @@
         </div>
       </div>
     </header>
-	
+
     <noscript>
 		<span style="font-size: 2em; font-weight: bold; margin: 3em; padding: 3em;">
-        <br />            
-        For functionality of this site it is necessary to enable JavaScript. 
-		<br />  
-                Here are the <a href="https://www.enable-javascript.com/" target="_blank">instructions how to enable JavaScript in your web browser</a>.
+        <br />
+        For functionality of this site it is necessary to enable JavaScript.
+		<br />
+		Here are the <a href="https://www.enable-javascript.com/" target="_blank">instructions how to enable JavaScript in your web browser</a>.
 		</span>
     </noscript>
-	
+
     <section id="body" class="container" style="display: none;">
 	    <div class="row">
 			<div class="col-xs-2 col-xs-offset-4">
@@ -69,22 +69,22 @@
 	<section id="change-user-section" class="container center-message" tabindex="-1" style="display: none;">
 		<div id="change-user-message" class="message-text" tabindex="-1"></div>
 		<div id="change-user-buttons" class="user-buttons" tabindex="-1"></div>
-		
+
 		<form id="add-user">
 			<input id="new-user" type="text" autocomplete="off" maxlength="16" />
 			<input type="submit" class="btn btn-primary" value="Add">
 		</form>
 	</section>
-	
+
 	<section id="start-game-section" class="container center-message" tabindex="-1" style="display: none;">
-		<button id="start-button" class="btn btn-info btn-xl" tabindex="-1">Start</button>	
+		<button id="start-button" class="btn btn-info btn-xl" tabindex="-1">Start</button>
 	</section>
 
 	<section id="game-over-section" class="container center-message" tabindex="-1" style="display: none;">
 		<div id="game-over-message" class="message-text" tabindex="-1"></div>
-		<button id="play-again-button" class="btn btn-info btn-lg" tabindex="-1">Play again?</button>	
+		<button id="play-again-button" class="btn btn-info btn-lg" tabindex="-1">Play again?</button>
 	</section>
-	
+
 	<section id="report-section" class="container center-message" tabindex="-1" style="display: none;">
 		<canvas id="myChart"  width="800" height="400"></canvas>
 		<span class="legend">
@@ -94,9 +94,9 @@
 			<div class="legend-square-2"></div>
 		</span>
 	</section>
-	
+
   </div>
-	
+
   <div class="modal" id="msgDialog" tabindex="-1">
     <div class="modal-dialog">
       <div class="modal-content">
@@ -113,7 +113,7 @@
       </div>
     </div>
   </div>
-  
+
   <div class="modal" id="sentDialog" tabindex="-1">
     <div class="modal-dialog modal-sm">
       <div class="modal-content">
@@ -131,10 +131,10 @@
     </div>
   </div>
 
-  <script type="text/javascript" src="scripts/jquery-1.11.0.js"></script>	
-  <script type="text/javascript" src="bootstrap/js/bootstrap.js"></script>	
+  <script type="text/javascript" src="scripts/jquery-1.11.0.js"></script>
+  <script type="text/javascript" src="bootstrap/js/bootstrap.js"></script>
   <script type="text/javascript" src="scripts/Chart.js"></script>
-  <script type="text/javascript" src="scripts/site.js"></script>	
+  <script type="text/javascript" src="scripts/site.js"></script>
   <script type="text/javascript">
 	$(document).ready(function () {
 	  initProgram();
