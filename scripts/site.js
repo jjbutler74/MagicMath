@@ -189,9 +189,9 @@ function GetProblem() {
 	window.startCurrentProblem = new Date().getTime();
 	var topNum = Math.floor((Math.random() * 13)); // 0 to 12
 	var bottomNum = Math.floor((Math.random() * 13)); // 0 to 12
-	$('#topNumber').text(topNum);
-	$('#operator').text('X');
-	$('#bottomNumber').text(bottomNum);
+	$('#topNumber').text(topNum); 
+  $('#operator').text('×');
+	$('#bottomNumber').text(bottomNum); 
 	$('#guess').val('');
 	$('#message').hide();
 	$('#guess').focus();
