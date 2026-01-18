@@ -25,6 +25,7 @@
           </div>
           <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="navbar-nav ms-auto">
+              <li class="nav-item"><button id="settings-button" class="btn btn-secondary btn-lg me-2"><i class="bi bi-gear"></i> Settings</button></li>
               <li class="nav-item"><button id="change-user-button" class="btn btn-info btn-lg me-2">Change or Add User</button></li>
               <li class="nav-item"><button id="see-report-button" class="btn btn-info btn-lg">See Report</button></li>
             </ul>
@@ -125,6 +126,42 @@
 		<h2 class="mb-4">Review Your Mistakes</h2>
 		<div id="mistakes-list" class="mb-4"></div>
 		<button id="close-review-button" class="btn btn-primary btn-lg" tabindex="-1">Back to Results</button>
+	</section>
+
+	<section id="settings-section" class="container center-message" tabindex="-1" style="display: none;">
+		<h2 class="mb-4">Settings for <span id="settings-user-name"></span></h2>
+
+		<div class="settings-card">
+			<h3 class="mb-3">Difficulty Level</h3>
+			<p class="text-muted mb-4">Choose the range of multiplication problems</p>
+
+			<div id="difficulty-buttons" class="d-grid gap-3">
+				<button type="button" class="difficulty-btn btn btn-outline-primary btn-lg" data-difficulty="easy">
+					<i class="bi bi-star"></i> Easy (0-5)
+					<div class="difficulty-desc">Perfect for beginners learning basic multiplication</div>
+				</button>
+				<button type="button" class="difficulty-btn btn btn-outline-primary btn-lg" data-difficulty="medium">
+					<i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i> Medium (0-10)
+					<div class="difficulty-desc">Standard multiplication practice</div>
+				</button>
+				<button type="button" class="difficulty-btn btn btn-outline-primary btn-lg" data-difficulty="hard">
+					<i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i> Hard (0-12)
+					<div class="difficulty-desc">Challenge yourself with the full times tables</div>
+				</button>
+			</div>
+
+			<div class="mt-4">
+				<h3 class="mb-3">Sound Effects</h3>
+				<p class="text-muted mb-3">Enable or disable game sounds</p>
+				<button type="button" id="sound-toggle" class="btn btn-success btn-lg w-100">
+					<i id="sound-icon" class="bi bi-volume-up-fill"></i> Sound Effects: <span class="sound-status">On</span>
+				</button>
+			</div>
+
+			<div id="settings-message" class="alert alert-success mt-4" style="display: none;"></div>
+		</div>
+
+		<button id="close-settings-button" class="btn btn-primary btn-lg mt-4" tabindex="-1">Done</button>
 	</section>
 
 	<section id="report-section" class="container center-message" tabindex="-1" style="display: none;">
