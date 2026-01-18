@@ -12,8 +12,14 @@ class MagicMath {
     this.processing = false;
     this.startCurrentProblem = 0;
     this.problemHistory = []; // Track all problems in current game
+    this.difficultySettings = {
+      easy: { min: 0, max: 5, name: 'Easy (0-5)' },
+      medium: { min: 0, max: 10, name: 'Medium (0-10)' },
+      hard: { min: 0, max: 12, name: 'Hard (0-12)' }
+    };
 
     this.initializeApp();
+    this.initializeSounds();
   }
 
   initializeApp() {
@@ -57,6 +63,29 @@ class MagicMath {
     // See Report button
     document.getElementById('see-report-button').addEventListener('click', () => {
       this.seeReport();
+    });
+
+    // Settings button
+    document.getElementById('settings-button').addEventListener('click', () => {
+      this.showSettings();
+    });
+
+    // Close settings button
+    document.getElementById('close-settings-button').addEventListener('click', () => {
+      this.closeSettings();
+    });
+
+    // Difficulty level buttons - delegated event
+    document.getElementById('difficulty-buttons').addEventListener('click', (e) => {
+      if (e.target.classList.contains('difficulty-btn')) {
+        const difficulty = e.target.getAttribute('data-difficulty');
+        this.setDifficulty(difficulty);
+      }
+    });
+
+    // Sound toggle button
+    document.getElementById('sound-toggle').addEventListener('click', () => {
+      this.toggleSound();
     });
 
     // Add User Submit
@@ -171,6 +200,9 @@ class MagicMath {
     // Reset stats display
     this.updateStats();
 
+    // Play start game sound
+    this.playSound('start');
+
     // Get 1st problem
     this.getProblem();
   }
@@ -232,8 +264,13 @@ class MagicMath {
   getProblem() {
     this.currentTry = 1;
     this.startCurrentProblem = new Date().getTime();
-    const topNum = Math.floor(Math.random() * 13); // 0 to 12
-    const bottomNum = Math.floor(Math.random() * 13); // 0 to 12
+
+    // Get user's difficulty setting
+    const difficulty = this.getUserDifficulty();
+    const range = this.difficultySettings[difficulty];
+
+    const topNum = Math.floor(Math.random() * (range.max - range.min + 1)) + range.min;
+    const bottomNum = Math.floor(Math.random() * (range.max - range.min + 1)) + range.min;
 
     // Store current problem
     this.currentProblemData = {
@@ -253,6 +290,191 @@ class MagicMath {
 
     // Update progress bar
     this.updateProgressBar();
+  }
+
+  getUserDifficulty() {
+    const currentUser = localStorage.getItem('currentUser');
+    const key = currentUser + 'Settings';
+    const settings = JSON.parse(localStorage.getItem(key));
+    return settings?.difficulty || 'medium'; // Default to medium
+  }
+
+  setDifficulty(difficulty) {
+    const currentUser = localStorage.getItem('currentUser');
+    const key = currentUser + 'Settings';
+    const settings = { difficulty: difficulty };
+    localStorage.setItem(key, JSON.stringify(settings));
+
+    // Update UI to show selected difficulty
+    this.updateDifficultyUI(difficulty);
+
+    // Show success message
+    const difficultyName = this.difficultySettings[difficulty].name;
+    document.getElementById('settings-message').textContent = `Difficulty set to ${difficultyName}`;
+    document.getElementById('settings-message').style.display = 'block';
+    setTimeout(() => {
+      document.getElementById('settings-message').style.display = 'none';
+    }, 2000);
+  }
+
+  updateDifficultyUI(difficulty) {
+    // Remove active class from all buttons
+    document.querySelectorAll('.difficulty-btn').forEach(btn => {
+      btn.classList.remove('btn-success', 'active');
+      btn.classList.add('btn-outline-primary');
+    });
+
+    // Add active class to selected button
+    const selectedBtn = document.querySelector(`[data-difficulty="${difficulty}"]`);
+    if (selectedBtn) {
+      selectedBtn.classList.remove('btn-outline-primary');
+      selectedBtn.classList.add('btn-success', 'active');
+    }
+  }
+
+  showSettings() {
+    document.getElementById('body').style.display = 'none';
+    document.getElementById('start-game-section').style.display = 'none';
+    document.getElementById('game-over-section').style.display = 'none';
+    document.getElementById('change-user-section').style.display = 'none';
+    document.getElementById('review-mistakes-section').style.display = 'none';
+    document.getElementById('report-section').style.display = 'none';
+    document.getElementById('settings-section').style.display = 'block';
+
+    // Update UI to show current difficulty
+    const difficulty = this.getUserDifficulty();
+    this.updateDifficultyUI(difficulty);
+
+    // Update user name in settings
+    const currentUser = localStorage.getItem('currentUser');
+    document.getElementById('settings-user-name').textContent = currentUser;
+  }
+
+  closeSettings() {
+    document.getElementById('settings-section').style.display = 'none';
+    document.getElementById('start-game-section').style.display = 'block';
+  }
+
+  initializeSounds() {
+    // Create AudioContext for Web Audio API
+    this.audioContext = null;
+    this.soundsEnabled = localStorage.getItem('soundsEnabled') !== 'false'; // Default to true
+    this.updateSoundUI();
+  }
+
+  toggleSound() {
+    this.soundsEnabled = !this.soundsEnabled;
+    localStorage.setItem('soundsEnabled', this.soundsEnabled);
+    this.updateSoundUI();
+
+    // Play a test sound when enabling
+    if (this.soundsEnabled) {
+      this.playSound('correct');
+    }
+  }
+
+  updateSoundUI() {
+    const soundToggle = document.getElementById('sound-toggle');
+    const soundIcon = document.getElementById('sound-icon');
+
+    if (this.soundsEnabled) {
+      soundToggle.classList.remove('btn-outline-secondary');
+      soundToggle.classList.add('btn-success');
+      soundIcon.className = 'bi bi-volume-up-fill';
+      soundToggle.querySelector('.sound-status').textContent = 'On';
+    } else {
+      soundToggle.classList.remove('btn-success');
+      soundToggle.classList.add('btn-outline-secondary');
+      soundIcon.className = 'bi bi-volume-mute-fill';
+      soundToggle.querySelector('.sound-status').textContent = 'Off';
+    }
+  }
+
+  playSound(type) {
+    if (!this.soundsEnabled) return;
+
+    // Initialize AudioContext on first user interaction (required by browsers)
+    if (!this.audioContext) {
+      this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    }
+
+    const ctx = this.audioContext;
+    const now = ctx.currentTime;
+
+    // Create oscillator and gain nodes
+    const oscillator = ctx.createOscillator();
+    const gainNode = ctx.createGain();
+
+    oscillator.connect(gainNode);
+    gainNode.connect(ctx.destination);
+
+    // Define sound patterns
+    switch (type) {
+      case 'correct':
+        // Happy ascending tones
+        oscillator.frequency.setValueAtTime(523.25, now); // C5
+        oscillator.frequency.setValueAtTime(659.25, now + 0.1); // E5
+        oscillator.frequency.setValueAtTime(783.99, now + 0.2); // G5
+        oscillator.type = 'sine';
+        gainNode.gain.setValueAtTime(0.3, now);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+        oscillator.start(now);
+        oscillator.stop(now + 0.3);
+        break;
+
+      case 'tryAgain':
+        // Gentle encouraging tone
+        oscillator.frequency.setValueAtTime(440, now); // A4
+        oscillator.frequency.setValueAtTime(392, now + 0.1); // G4
+        oscillator.type = 'sine';
+        gainNode.gain.setValueAtTime(0.2, now);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+        oscillator.start(now);
+        oscillator.stop(now + 0.2);
+        break;
+
+      case 'gameComplete':
+        // Celebration fanfare
+        this.playFanfare(ctx, now);
+        return; // Fanfare handles its own timing
+
+      case 'start':
+        // Game start beep
+        oscillator.frequency.setValueAtTime(523.25, now); // C5
+        oscillator.type = 'square';
+        gainNode.gain.setValueAtTime(0.2, now);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+        oscillator.start(now);
+        oscillator.stop(now + 0.15);
+        break;
+    }
+  }
+
+  playFanfare(ctx, now) {
+    // Create a celebratory sequence of notes
+    const notes = [
+      { freq: 523.25, time: 0 },    // C5
+      { freq: 659.25, time: 0.15 },  // E5
+      { freq: 783.99, time: 0.3 },   // G5
+      { freq: 1046.5, time: 0.45 },  // C6
+    ];
+
+    notes.forEach(note => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.frequency.setValueAtTime(note.freq, now + note.time);
+      osc.type = 'sine';
+
+      gain.gain.setValueAtTime(0.3, now + note.time);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + note.time + 0.2);
+
+      osc.start(now + note.time);
+      osc.stop(now + note.time + 0.2);
+    });
   }
 
   updateProgressBar() {
@@ -292,6 +514,9 @@ class MagicMath {
     // Save problem to history
     this.problemHistory.push({ ...this.currentProblemData });
 
+    // Play correct answer sound
+    this.playSound('correct');
+
     const messageEl = document.getElementById('message');
     messageEl.textContent = 'You got it!';
     this.fadeIn(messageEl);
@@ -307,6 +532,9 @@ class MagicMath {
       this.currentProblem++;
       setTimeout(() => this.getProblem(), 1000);
     } else {
+      // Play game complete celebration sound
+      this.playSound('gameComplete');
+
       setTimeout(() => {
         document.getElementById('body').style.display = 'none';
 
@@ -352,6 +580,9 @@ class MagicMath {
       this.missedProblems++;
       this.updateStats();
     }
+
+    // Play try again sound
+    this.playSound('tryAgain');
 
     this.currentTry++;
     const messageEl = document.getElementById('message');
@@ -400,6 +631,7 @@ class MagicMath {
     document.getElementById('game-over-section').style.display = 'none';
     document.getElementById('change-user-section').style.display = 'none';
     document.getElementById('review-mistakes-section').style.display = 'none';
+    document.getElementById('settings-section').style.display = 'none';
     document.getElementById('report-section').style.display = 'block';
 
     const key = document.getElementById('CurrentUser').textContent + 'Log';
