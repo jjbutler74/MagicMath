@@ -1,371 +1,535 @@
-function initProgram() {
-  // Set global number of problems
-  window.numberOfProblems = 10;
+// Modern ES6+ Magic Math Application
+class MagicMath {
+  constructor() {
+    this.numberOfProblems = 10;
+    this.currentProblem = 1;
+    this.missedProblems = 0;
+    this.correctProblems = 0;
+    this.totalAttempts = 0;
+    this.startTime = 0;
+    this.totalTime = 0;
+    this.currentTry = 1;
+    this.processing = false;
+    this.startCurrentProblem = 0;
+    this.problemHistory = []; // Track all problems in current game
 
-  // Get Current User
-  var currentUser = localStorage.getItem('currentUser');
-  if (currentUser == null) {
-    NoUser();
-    ChangeUser();
-  } else {
-	$('#CurrentUser').text(currentUser);
-	$('#start-game-section').show();
-  }
-}
-
-// Submitted Guess
-$('#submitted-guess').submit(function( event ) {
-  if (window.processing) {return false;} // Prevent multiple submission
-  var answerNum = $('#topNumber').text() * $('#bottomNumber').text();
-
-  if ($('#guess').val() == '') {
-	return false; // skip blank answers
+    this.initializeApp();
   }
 
-  if ($('#guess').val() == answerNum) {
-    // Right answer
-	RightAnswer();
-  } else {
-    // Wrong answer
-	WrongAnswer(answerNum);
-  }
-  return false;
-});
+  initializeApp() {
+    // Get Current User
+    const currentUser = localStorage.getItem('currentUser');
+    if (!currentUser) {
+      this.noUser();
+      this.changeUser();
+    } else {
+      document.getElementById('CurrentUser').textContent = currentUser;
+      document.getElementById('start-game-section').style.display = 'block';
+    }
 
-// Change User button
-$("#change-user-button").on("click", function () {
-  ChangeUser();
-});
-
-// See Report button
-$("#see-report-button").on("click", function () {
-  SeeReport();
-});
-
-// Add User Submit
-$('#add-user').submit(function( event ) {
-  var newUser = ($('#new-user').val()).trim();
-  if (newUser == '') {return false;} // If blank, skip it
-
-  // Check if name = you!
-  if (newUser == 'you!') {
-  	$("#dialogMsg").text("Don't be a smarty pants, pick another name!");
-    $("#msgDialog").modal('show');
-	return false;
+    this.attachEventListeners();
   }
 
-  // Get User List
-  var currentUserList = JSON.parse(localStorage.getItem('currentUserList'));
-  if (currentUserList == null) {
-    var userArray = [];
-    userArray.push(newUser);
-    currentUserList = userArray;
-  } else {
-    var userPos = $.inArray(newUser, currentUserList);
-	if (userPos != -1)
-	{
-	  $('#sentDialog').modal('show');
-	  {return false;}
-	}
-    currentUserList.push(newUser);
-  }
-  localStorage.setItem('currentUserList', JSON.stringify(currentUserList));
+  attachEventListeners() {
+    // Submitted Guess
+    document.getElementById('submitted-guess').addEventListener('submit', (e) => {
+      e.preventDefault();
+      if (this.processing) return;
 
-  // Set User and Start New Game
-  NewUser(newUser);
-  return false;
-});
+      const guessValue = document.getElementById('guess').value;
+      if (!guessValue) return;
 
-// Start button
-$("#start-button").on("click", function () {
-  $('#start-game-section').hide();
-  StartGame();
-});
+      const answerNum = parseInt(document.getElementById('topNumber').textContent) *
+                        parseInt(document.getElementById('bottomNumber').textContent);
 
-// Play again button
-$("#play-again-button").on("click", function () {
-  $('#game-over-section').hide();
-  StartGame();
-});
+      if (parseInt(guessValue) === answerNum) {
+        this.rightAnswer();
+      } else {
+        this.wrongAnswer(answerNum);
+      }
+    });
 
-// Only allow numbers for answers
-$('#guess').keyup(function(e) {
-  if (/\D/g.test(this.value)) {
-    this.value = this.value.replace(/\D/g, '');
-  }
-});
+    // Change User button
+    document.getElementById('change-user-button').addEventListener('click', () => {
+      this.changeUser();
+    });
 
-function StartGame() {
-  $('#body').fadeIn()
-  window.currentProblem = 1;
-  window.missedProblems = 0;
-  window.startTime = new Date().getTime();
-  window.totalTime = 0;
+    // See Report button
+    document.getElementById('see-report-button').addEventListener('click', () => {
+      this.seeReport();
+    });
 
-  // Get 1st problem
-  GetProblem();
-}
+    // Add User Submit
+    document.getElementById('add-user').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const newUser = document.getElementById('new-user').value.trim();
+      if (!newUser) return;
 
-function ChangeUser() {
-  $('#body').hide();
-  $('#start-game-section').hide();
-  $('#game-over-section').hide();
-  $('#report-section').hide()
-  $('#new-user').val('');
-  $('#change-user-section').show()
+      // Check if name = you!
+      if (newUser === 'you!') {
+        document.getElementById('dialogMsg').textContent = "Don't be a smarty pants, pick another name!";
+        const msgDialog = new bootstrap.Modal(document.getElementById('msgDialog'));
+        msgDialog.show();
+        return;
+      }
 
-  var currentUser = localStorage.getItem('currentUser');
-  var userHtml = '';
-  var userMessage = 'Add User';
-  // Get User Array
-  var currentUserList = JSON.parse(localStorage.getItem('currentUserList'));
-  if (currentUserList != null) {
-    userMessage = 'Change or Add User';
-    $.each( currentUserList, function( key, value ) {
-      userHtml = userHtml + '<p><button type="button" value="' + value + '" class="user-btn btn btn-info btn-lg">' + value + '</button>'
-	  userHtml = userHtml + ' <button type="button" value="' + value + '" class="user-delete-btn btn btn-xs"><span class="glyphicon glyphicon-trash"></span></button></p>'
+      // Get User List
+      let currentUserList = JSON.parse(localStorage.getItem('currentUserList'));
+      if (!currentUserList) {
+        currentUserList = [];
+      } else {
+        // Check if user already exists
+        if (currentUserList.includes(newUser)) {
+          const sentDialog = new bootstrap.Modal(document.getElementById('sentDialog'));
+          sentDialog.show();
+          return;
+        }
+      }
+
+      currentUserList.push(newUser);
+      localStorage.setItem('currentUserList', JSON.stringify(currentUserList));
+
+      // Set User and Start New Game
+      this.newUser(newUser);
+    });
+
+    // Start button
+    document.getElementById('start-button').addEventListener('click', () => {
+      document.getElementById('start-game-section').style.display = 'none';
+      this.startGame();
+    });
+
+    // Play again button
+    document.getElementById('play-again-button').addEventListener('click', () => {
+      document.getElementById('game-over-section').style.display = 'none';
+      document.getElementById('review-mistakes-section').style.display = 'none';
+      this.startGame();
+    });
+
+    // Review mistakes button
+    document.getElementById('review-mistakes-button').addEventListener('click', () => {
+      this.showMistakesReview();
+    });
+
+    // Close review button
+    document.getElementById('close-review-button').addEventListener('click', () => {
+      document.getElementById('review-mistakes-section').style.display = 'none';
+      document.getElementById('game-over-section').style.display = 'block';
+    });
+
+    // Only allow numbers for answers
+    document.getElementById('guess').addEventListener('keyup', function() {
+      if (/\D/g.test(this.value)) {
+        this.value = this.value.replace(/\D/g, '');
+      }
+    });
+
+    // Change User button(s) - delegated event
+    document.getElementById('change-user-buttons').addEventListener('click', (e) => {
+      if (e.target.classList.contains('user-btn')) {
+        const currentUser = e.target.getAttribute('value');
+        this.newUser(currentUser);
+      }
+    });
+
+    // Delete User button(s) - delegated event
+    document.getElementById('change-user-buttons').addEventListener('click', (e) => {
+      if (e.target.classList.contains('user-delete-btn') ||
+          e.target.closest('.user-delete-btn')) {
+        const btn = e.target.classList.contains('user-delete-btn') ?
+                    e.target : e.target.closest('.user-delete-btn');
+        const userToDelete = btn.getAttribute('value');
+        this.deleteUser(userToDelete);
+
+        // Remove User from screen list
+        btn.closest('p').remove();
+
+        // If deleted user is the current user
+        const currentUser = document.getElementById('CurrentUser').textContent;
+        if (userToDelete === currentUser) {
+          localStorage.removeItem('currentUser');
+          this.noUser();
+        }
+      }
     });
   }
 
-  $('#change-user-buttons').html(userHtml);
-  $('#change-user-message').text(userMessage);
-}
+  startGame() {
+    const bodySection = document.getElementById('body');
+    bodySection.style.display = 'block';
+    bodySection.style.opacity = '0';
+    this.fadeIn(bodySection);
 
-// Change User button(s)
-$('#change-user-buttons').on('click', '.user-btn', function () {
-  // Set User and Start New Game
-  currentUser = $(this).attr("value");
-  NewUser(currentUser);
-});
+    this.currentProblem = 1;
+    this.missedProblems = 0;
+    this.correctProblems = 0;
+    this.totalAttempts = 0;
+    this.startTime = new Date().getTime();
+    this.totalTime = 0;
+    this.problemHistory = []; // Reset problem history
 
-// Delete User button(s)
-$('#change-user-buttons').on('click', '.user-delete-btn', function () {
-  userToDelete = $(this).attr("value");
-  DeleteUser(userToDelete);
+    // Reset stats display
+    this.updateStats();
 
-  // Remove User from screen list
-  $(this).parent().remove(); // or $(this).closest('p').remove();
-
-  // If deleted user is the current user
-  var currentUser = $('#CurrentUser').text();
-  if(userToDelete ==  currentUser) {
-	localStorage.removeItem('currentUser');
-	NoUser();
-  }
-});
-
-function NoUser() {
-	$('#CurrentUser').text("you!");
-}
-
-function NewUser(currentUser) {
-  localStorage.setItem('currentUser', currentUser);
-  $('#CurrentUser').text(currentUser);
-  $('#change-user-section').hide()
-  $('#report-section').hide()
-  $('#start-game-section').show();
-}
-
-function DeleteUser(userToDelete) {
-  // Delete Users from Array
-  // Get User List
-  var currentUserList = JSON.parse(localStorage.getItem('currentUserList'));
-  if (currentUserList != null) {
-    // Get User Position in Array
-    var userToDeleteArrayPosition = $.inArray(userToDelete, currentUserList);
-	// Cut User out of the Array
-	currentUserList.splice(userToDeleteArrayPosition,1);
-    // Save User List
-    localStorage.setItem('currentUserList', JSON.stringify(currentUserList));
+    // Get 1st problem
+    this.getProblem();
   }
 
-  // Delete Users Log
-  var key = userToDelete + 'Log';
-  localStorage.removeItem(key);
-}
+  changeUser() {
+    document.getElementById('body').style.display = 'none';
+    document.getElementById('start-game-section').style.display = 'none';
+    document.getElementById('game-over-section').style.display = 'none';
+    document.getElementById('report-section').style.display = 'none';
+    document.getElementById('new-user').value = '';
+    document.getElementById('change-user-section').style.display = 'block';
 
-function GetProblem() {
-	window.currentTry = 1;
-	window.startCurrentProblem = new Date().getTime();
-	var topNum = Math.floor((Math.random() * 13)); // 0 to 12
-	var bottomNum = Math.floor((Math.random() * 13)); // 0 to 12
-	$('#topNumber').text(topNum); 
-  $('#operator').text('×');
-	$('#bottomNumber').text(bottomNum); 
-	$('#guess').val('');
-	$('#message').hide();
-	$('#guess').focus();
-	window.processing = false;
-}
+    let userHtml = '';
+    let userMessage = 'Add User';
 
-function RightAnswer() {
-	window.processing = true;
-	$('#message').text('You got it!');
-	$('#message').fadeIn().delay(500).fadeOut();
+    // Get User Array
+    const currentUserList = JSON.parse(localStorage.getItem('currentUserList'));
+    if (currentUserList) {
+      userMessage = 'Change or Add User';
+      currentUserList.forEach(value => {
+        userHtml += `<p><button type="button" value="${value}" class="user-btn btn btn-info btn-lg">${value}</button>`;
+        userHtml += ` <button type="button" value="${value}" class="user-delete-btn btn btn-sm"><i class="bi bi-trash"></i></button></p>`;
+      });
+    }
 
-	window.totalTime = (new Date().getTime() - window.startTime) / 1000;
-	var totalTimeRounded = Math.round(window.totalTime).toFixed(0);
+    document.getElementById('change-user-buttons').innerHTML = userHtml;
+    document.getElementById('change-user-message').textContent = userMessage;
+  }
 
-	if (window.currentProblem < window.numberOfProblems) {
-	  window.currentProblem = window.currentProblem + 1;
-	  setTimeout(function(){GetProblem()},1000);
-	} else {
-	  setTimeout(function(){
-	  	$('#body').hide();
-		$('#game-over-message').text('Good job! You only missed ' + window.missedProblems +
-			' problems and it only took you ' + totalTimeRounded + ' seconds!');
-		$('#game-over-section').fadeIn()
-	  },1000);
+  noUser() {
+    document.getElementById('CurrentUser').textContent = 'you!';
+  }
 
-      LogGame();
-	}
-}
+  newUser(currentUser) {
+    localStorage.setItem('currentUser', currentUser);
+    document.getElementById('CurrentUser').textContent = currentUser;
+    document.getElementById('change-user-section').style.display = 'none';
+    document.getElementById('report-section').style.display = 'none';
+    document.getElementById('start-game-section').style.display = 'block';
+  }
 
-function LogGame() {
-  var key = $('#CurrentUser').text() + 'Log';
-  var log = {};
-  log.Date = new Date();
-  log.NumberWrong = window.missedProblems;
-  log.TotalTime = window.totalTime;
+  deleteUser(userToDelete) {
+    // Delete Users from Array
+    let currentUserList = JSON.parse(localStorage.getItem('currentUserList'));
+    if (currentUserList) {
+      // Get User Position in Array
+      const userToDeleteArrayPosition = currentUserList.indexOf(userToDelete);
+      // Cut User out of the Array
+      currentUserList.splice(userToDeleteArrayPosition, 1);
+      // Save User List
+      localStorage.setItem('currentUserList', JSON.stringify(currentUserList));
+    }
 
-  var userLog = JSON.parse(localStorage.getItem(key));
-  if (userLog == null) {
-    var logs = [];
-    logs.push(log);
-    userLog = logs;
-  } else {
+    // Delete Users Log
+    const key = userToDelete + 'Log';
+    localStorage.removeItem(key);
+  }
+
+  getProblem() {
+    this.currentTry = 1;
+    this.startCurrentProblem = new Date().getTime();
+    const topNum = Math.floor(Math.random() * 13); // 0 to 12
+    const bottomNum = Math.floor(Math.random() * 13); // 0 to 12
+
+    // Store current problem
+    this.currentProblemData = {
+      top: topNum,
+      bottom: bottomNum,
+      answer: topNum * bottomNum,
+      wasCorrect: false
+    };
+
+    document.getElementById('topNumber').textContent = topNum;
+    document.getElementById('operator').textContent = '×';
+    document.getElementById('bottomNumber').textContent = bottomNum;
+    document.getElementById('guess').value = '';
+    document.getElementById('message').style.display = 'none';
+    document.getElementById('guess').focus();
+    this.processing = false;
+
+    // Update progress bar
+    this.updateProgressBar();
+  }
+
+  updateProgressBar() {
+    const percentage = (this.currentProblem / this.numberOfProblems) * 100;
+    const progressBar = document.getElementById('progress-bar');
+    const progressText = document.getElementById('progress-text');
+    const progressPercentage = document.getElementById('progress-percentage');
+
+    progressBar.style.width = `${percentage}%`;
+    progressBar.setAttribute('aria-valuenow', percentage);
+    progressText.textContent = `Problem ${this.currentProblem} of ${this.numberOfProblems}`;
+    progressPercentage.textContent = `${Math.round(percentage)}%`;
+  }
+
+  updateStats() {
+    document.getElementById('correct-count').textContent = this.correctProblems;
+    document.getElementById('missed-count').textContent = this.missedProblems;
+
+    // Calculate accuracy
+    const totalProblems = this.correctProblems + this.missedProblems;
+    let accuracy = 100;
+    if (totalProblems > 0) {
+      accuracy = Math.round((this.correctProblems / totalProblems) * 100);
+    }
+    document.getElementById('accuracy-percentage').textContent = `${accuracy}%`;
+  }
+
+  rightAnswer() {
+    this.processing = true;
+
+    // Only count as correct if it's the first try
+    if (this.currentTry === 1) {
+      this.correctProblems++;
+      this.currentProblemData.wasCorrect = true;
+    }
+
+    // Save problem to history
+    this.problemHistory.push({ ...this.currentProblemData });
+
+    const messageEl = document.getElementById('message');
+    messageEl.textContent = 'You got it!';
+    this.fadeIn(messageEl);
+    setTimeout(() => this.fadeOut(messageEl), 500);
+
+    this.totalTime = (new Date().getTime() - this.startTime) / 1000;
+    const totalTimeRounded = Math.round(this.totalTime);
+
+    // Update stats
+    this.updateStats();
+
+    if (this.currentProblem < this.numberOfProblems) {
+      this.currentProblem++;
+      setTimeout(() => this.getProblem(), 1000);
+    } else {
+      setTimeout(() => {
+        document.getElementById('body').style.display = 'none';
+
+        // Show/hide review button based on if there are mistakes
+        const reviewBtn = document.getElementById('review-mistakes-button');
+        if (this.missedProblems > 0) {
+          reviewBtn.style.display = 'inline-block';
+        } else {
+          reviewBtn.style.display = 'none';
+        }
+
+        document.getElementById('game-over-message').textContent =
+          `Good job! You only missed ${this.missedProblems} problems and it only took you ${totalTimeRounded} seconds!`;
+        const gameOverSection = document.getElementById('game-over-section');
+        gameOverSection.style.display = 'block';
+        gameOverSection.style.opacity = '0';
+        this.fadeIn(gameOverSection);
+      }, 1000);
+
+      this.logGame();
+    }
+  }
+
+  logGame() {
+    const key = document.getElementById('CurrentUser').textContent + 'Log';
+    const log = {
+      Date: new Date().toISOString(),
+      NumberWrong: this.missedProblems,
+      TotalTime: this.totalTime
+    };
+
+    let userLog = JSON.parse(localStorage.getItem(key));
+    if (!userLog) {
+      userLog = [];
+    }
     userLog.push(log);
+    localStorage.setItem(key, JSON.stringify(userLog));
   }
-  localStorage.setItem(key, JSON.stringify(userLog));
-}
 
-function WrongAnswer(answerNum) {
-	window.missedProblems = window.missedProblems + 1;
-    window.currentTry = window.currentTry + 1;
-	if (window.currentTry < 4) {
-	  $('#message').text('Try Again');
-	  $('#message').fadeIn().delay(500).fadeOut();
-	} else {
-	  $('#message').text('The Answer is ' + answerNum);
-	  $('#message').fadeIn().delay(1000).fadeOut();
-	}
-    $('#guess').select();
-}
+  wrongAnswer(answerNum) {
+    // Only count as missed on the first wrong attempt
+    if (this.currentTry === 1) {
+      this.missedProblems++;
+      this.updateStats();
+    }
 
-function SeeReport() {
-  $('#body').hide();
-  $('#start-game-section').hide();
-  $('#game-over-section').hide();
-  $('#change-user-section').hide()
-  $('#report-section').show()
+    this.currentTry++;
+    const messageEl = document.getElementById('message');
 
-  var key = $('#CurrentUser').text() + 'Log';
-  var userLog = JSON.parse(localStorage.getItem(key));
+    if (this.currentTry < 4) {
+      messageEl.textContent = 'Try Again';
+      this.fadeIn(messageEl);
+      setTimeout(() => this.fadeOut(messageEl), 500);
+    } else {
+      messageEl.textContent = `The Answer is ${answerNum}`;
+      this.fadeIn(messageEl);
+      setTimeout(() => this.fadeOut(messageEl), 1000);
+    }
+    document.getElementById('guess').select();
+  }
 
-  var chartDates = [];
-  var chartNumberWrong = [];
-  var chartTime = [];
+  showMistakesReview() {
+    document.getElementById('game-over-section').style.display = 'none';
+    document.getElementById('review-mistakes-section').style.display = 'block';
 
-  if (userLog != null) {
-    $.each( userLog, function( key, value ) {
+    const mistakesList = document.getElementById('mistakes-list');
+    const mistakes = this.problemHistory.filter(p => !p.wasCorrect);
 
-	date = new Date(value.Date);
-	formatDate = date.toLocaleDateString("en-US");
+    let html = '<div class="mistakes-grid">';
+    mistakes.forEach((problem) => {
+      html += `
+        <div class="mistake-card">
+          <div class="mistake-number">Problem ${this.problemHistory.indexOf(problem) + 1}</div>
+          <div class="mistake-problem">
+            <div class="mistake-top">${problem.top}</div>
+            <div class="mistake-bottom">× ${problem.bottom}</div>
+            <div class="mistake-line"></div>
+            <div class="mistake-answer">${problem.answer}</div>
+          </div>
+        </div>
+      `;
+    });
+    html += '</div>';
 
-    chartDates.push(formatDate);
-	chartNumberWrong.push(value.NumberWrong);
+    mistakesList.innerHTML = html;
+  }
+
+  seeReport() {
+    document.getElementById('body').style.display = 'none';
+    document.getElementById('start-game-section').style.display = 'none';
+    document.getElementById('game-over-section').style.display = 'none';
+    document.getElementById('change-user-section').style.display = 'none';
+    document.getElementById('review-mistakes-section').style.display = 'none';
+    document.getElementById('report-section').style.display = 'block';
+
+    const key = document.getElementById('CurrentUser').textContent + 'Log';
+    const userLog = JSON.parse(localStorage.getItem(key));
+
+    const chartDates = [];
+    const chartNumberWrong = [];
+    const chartTime = [];
+
+    if (userLog) {
+      userLog.forEach(value => {
+        const date = new Date(value.Date);
+        const formatDate = date.toLocaleDateString('en-US');
+        chartDates.push(formatDate);
+        chartNumberWrong.push(value.NumberWrong);
         chartTime.push(value.TotalTime);
+      });
+    }
+
+    this.drawChart(chartDates, chartNumberWrong, chartTime);
+  }
+
+  drawChart(labels, wrongData, timeData) {
+    const canvas = document.getElementById('myChart');
+    const ctx = canvas.getContext('2d');
+
+    // Destroy previous chart if it exists
+    if (window.magicMathChart) {
+      window.magicMathChart.destroy();
+    }
+
+    // Get largest chart value for scaling
+    const combinedArray = [...wrongData, ...timeData];
+    const largest = Math.max(...combinedArray);
+
+    let suggestedMax;
+    if (largest <= 10) suggestedMax = 10;
+    else if (largest <= 20) suggestedMax = 20;
+    else if (largest <= 40) suggestedMax = 40;
+    else if (largest <= 60) suggestedMax = 60;
+    else if (largest <= 80) suggestedMax = 80;
+    else if (largest <= 100) suggestedMax = 100;
+    else if (largest <= 200) suggestedMax = 200;
+    else suggestedMax = Math.ceil(largest / 100) * 100;
+
+    // Create chart using Chart.js v4
+    window.magicMathChart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: [
+          {
+            label: 'Number of Wrong Answers',
+            data: wrongData,
+            borderColor: 'rgba(151,187,205,1)',
+            backgroundColor: 'rgba(151,187,205,0.5)',
+            fill: true,
+            tension: 0.1
+          },
+          {
+            label: 'Total Time',
+            data: timeData,
+            borderColor: 'rgba(220,220,220,1)',
+            backgroundColor: 'rgba(220,220,220,0.5)',
+            fill: true,
+            tension: 0.1
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        scales: {
+          y: {
+            beginAtZero: true,
+            suggestedMax: suggestedMax
+          }
+        },
+        plugins: {
+          legend: {
+            display: true,
+            position: 'bottom'
+          }
+        }
+      }
+    });
+
+    // Handle window resize
+    window.addEventListener('resize', () => {
+      if (window.magicMathChart) {
+        window.magicMathChart.resize();
+      }
     });
   }
 
-  var data = {
-	labels : chartDates,
-	datasets : [
-		{
-			fillColor : "rgba(151,187,205,0.5)",
-			strokeColor : "rgba(151,187,205,1)",
-			pointColor : "rgba(151,187,205,1)",
-			pointStrokeColor : "#fff",
-			data : chartNumberWrong
-		},
-		{
-			fillColor : "rgba(220,220,220,0.5)",
-			strokeColor : "rgba(220,220,220,1)",
-			pointColor : "rgba(220,220,220,1)",
-			pointStrokeColor : "#fff",
-			data : chartTime
-		}
-	]
-  };
+  // Utility functions for animations
+  fadeIn(element, duration = 400) {
+    element.style.display = 'block';
+    element.style.opacity = '0';
 
-  //Get context with jQuery - using jQuery's .get() method.
-  var ctx = $("#myChart").get(0).getContext("2d");
-  //This will get the first returned node in the jQuery collection.
-  var myNewChart = new Chart(ctx);
-  DrawChart(ctx, data);
-  window.onresize = function(event){
-	  DrawChart(ctx, data);
-  };
+    let opacity = 0;
+    const increment = 50 / duration;
+    const timer = setInterval(() => {
+      opacity += increment;
+      if (opacity >= 1) {
+        opacity = 1;
+        clearInterval(timer);
+      }
+      element.style.opacity = opacity;
+    }, 50);
+  }
+
+  fadeOut(element, duration = 400) {
+    let opacity = parseFloat(window.getComputedStyle(element).opacity) || 1;
+    const decrement = 50 / duration;
+    const timer = setInterval(() => {
+      opacity -= decrement;
+      if (opacity <= 0) {
+        opacity = 0;
+        element.style.opacity = '0';
+        element.style.display = 'none';
+        clearInterval(timer);
+      } else {
+        element.style.opacity = opacity;
+      }
+    }, 50);
+  }
 }
 
-function DrawChart(ctx, data) {
-	// Get largest chart value (wrong answers and time)
-	var wrongArray = data.datasets[0].data;
-	var timeArray = data.datasets[1].data;
-	var combinedArray = wrongArray.concat(timeArray);
-	var largest = Math.max.apply(Math, combinedArray);
-
-	var scaleOverride = false;
-	var scaleSteps;
-	var scaleStepWidth;
-	switch (true) {
-		case (largest <= 10):
-			scaleOverride = true;
-			scaleSteps = 10;
-			scaleStepWidth = 1;
-			break;
-		case (largest > 10 && largest <= 20):
-			scaleOverride = true;
-			scaleSteps = 10;
-			scaleStepWidth = 2;
-			break;
-		case (largest > 20 && largest <= 40):
-			scaleOverride = true;
-			scaleSteps = 10;
-			scaleStepWidth = 4;
-			break;
-		case (largest > 40 && largest <= 60):
-			scaleOverride = true;
-			scaleSteps = 10;
-			scaleStepWidth = 6;
-			break;
-		case (largest > 60 && largest <= 80):
-			scaleOverride = true;
-			scaleSteps = 10;
-			scaleStepWidth = 8;
-			break;
-		case (largest > 80 && largest <= 100):
-			scaleOverride = true;
-			scaleSteps = 10;
-			scaleStepWidth = 10;
-			break;
-		case (largest > 100 && largest <= 200):
-			scaleOverride = true;
-			scaleSteps = 10;
-			scaleStepWidth = 20;
-			break;
-		default:
-			break;
-	}
-
-	var options = {
-		scaleOverride: scaleOverride,
-		scaleSteps: scaleSteps,
-		scaleStepWidth: scaleStepWidth,
-		scaleStartValue: 0
-	};
-
-    var width = $('canvas').parent().width();
-    $('canvas').attr("width",width);
-    new Chart(ctx).Line(data, options);
-}
+// Initialize app when DOM is ready
+document.addEventListener('DOMContentLoaded', () => {
+  window.magicMath = new MagicMath();
+});
