@@ -158,6 +158,10 @@
         <button id="close-settings-button"></button>
         <canvas id="myChart"></canvas>
         <div id="mistakes-list"></div>
+        <button id="start-button"></button>
+        <button id="play-again-button"></button>
+        <button id="close-review-button"></button>
+        <div id="sentDialog"></div>
     </div>
 
     <!-- Set test mode flag before loading site.js -->
@@ -229,6 +233,15 @@
         // Wait for site.js to load, then run tests
         window.addEventListener('DOMContentLoaded', () => {
             let magicMath;
+
+            // Log function for debugging
+            function debugLog(msg) {
+                console.log('[TEST DEBUG]', msg);
+            }
+
+            debugLog('DOMContentLoaded fired');
+            debugLog('MagicMath available: ' + (typeof MagicMath !== 'undefined'));
+            debugLog('window.isTestMode: ' + window.isTestMode);
 
             // Helper to reset test environment
             function resetTestEnvironment() {
