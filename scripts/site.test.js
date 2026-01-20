@@ -1,30 +1,33 @@
 /**
  * Unit tests for MagicMath application
+ * Tests the actual MagicMath class from site.js
  */
 
-// Mock DOM elements
+const MagicMath = require('./site.js');
+
+// Mock DOM elements before creating MagicMath instance
 document.body.innerHTML = `
   <div id="CurrentUser"></div>
-  <div id="start-game-section"></div>
-  <div id="body"></div>
-  <div id="game-over-section"></div>
-  <div id="settings-section"></div>
-  <div id="change-user-section"></div>
-  <div id="report-section"></div>
-  <div id="review-mistakes-section"></div>
+  <div id="start-game-section" style="display: none;"></div>
+  <div id="body" style="display: none;"></div>
+  <div id="game-over-section" style="display: none;"></div>
+  <div id="settings-section" style="display: none;"></div>
+  <div id="change-user-section" style="display: none;"></div>
+  <div id="report-section" style="display: none;"></div>
+  <div id="review-mistakes-section" style="display: none;"></div>
   <div id="topNumber"></div>
   <div id="bottomNumber"></div>
   <div id="operator"></div>
   <input id="guess" />
-  <div id="message"></div>
+  <div id="message" style="display: none;"></div>
   <div id="progress-bar"></div>
   <div id="progress-text"></div>
   <div id="progress-percentage"></div>
-  <div id="correct-count"></div>
-  <div id="missed-count"></div>
-  <div id="accuracy-percentage"></div>
+  <div id="correct-count">0</div>
+  <div id="missed-count">0</div>
+  <div id="accuracy-percentage">100%</div>
   <div id="game-over-message"></div>
-  <div id="review-mistakes-button"></div>
+  <button id="review-mistakes-button" style="display: none;"></button>
   <div id="settings-user-name"></div>
   <div id="difficulty-buttons"></div>
   <button id="sound-toggle">
@@ -46,358 +49,331 @@ document.body.innerHTML = `
   <div id="mistakes-list"></div>
 `;
 
-// Import the MagicMath class (we'll need to export it from site.js)
-// For now, we'll test the class structure and methods
-
-describe('MagicMath Application', () => {
+describe('MagicMath Class', () => {
   let magicMath;
 
   beforeEach(() => {
     // Clear localStorage before each test
     localStorage.clear();
 
-    // Reset DOM
+    // Reset DOM elements
     document.getElementById('CurrentUser').textContent = '';
     document.getElementById('guess').value = '';
     document.getElementById('topNumber').textContent = '';
     document.getElementById('bottomNumber').textContent = '';
+    document.getElementById('correct-count').textContent = '0';
+    document.getElementById('missed-count').textContent = '0';
+    document.getElementById('accuracy-percentage').textContent = '100%';
+
+    // Create new instance
+    magicMath = new MagicMath();
   });
 
   describe('Initialization', () => {
-    test('should initialize with default values', () => {
-      const defaultValues = {
-        numberOfProblems: 10,
-        currentProblem: 1,
-        missedProblems: 0,
-        correctProblems: 0,
-        difficultySettings: {
-          easy: { min: 0, max: 5, name: 'Easy (0-5)' },
-          medium: { min: 0, max: 10, name: 'Medium (0-10)' },
-          hard: { min: 0, max: 12, name: 'Hard (0-12)' }
-        }
-      };
-
-      expect(defaultValues.numberOfProblems).toBe(10);
-      expect(defaultValues.currentProblem).toBe(1);
-      expect(defaultValues.missedProblems).toBe(0);
-      expect(defaultValues.correctProblems).toBe(0);
+    test('should initialize with correct default values', () => {
+      expect(magicMath.numberOfProblems).toBe(10);
+      expect(magicMath.currentProblem).toBe(1);
+      expect(magicMath.missedProblems).toBe(0);
+      expect(magicMath.correctProblems).toBe(0);
+      expect(magicMath.problemHistory).toEqual([]);
     });
 
     test('should have correct difficulty settings', () => {
-      const settings = {
-        easy: { min: 0, max: 5, name: 'Easy (0-5)' },
-        medium: { min: 0, max: 10, name: 'Medium (0-10)' },
-        hard: { min: 0, max: 12, name: 'Hard (0-12)' }
-      };
+      expect(magicMath.difficultySettings.easy).toEqual({ min: 0, max: 5, name: 'Easy (0-5)' });
+      expect(magicMath.difficultySettings.medium).toEqual({ min: 0, max: 10, name: 'Medium (0-10)' });
+      expect(magicMath.difficultySettings.hard).toEqual({ min: 0, max: 12, name: 'Hard (0-12)' });
+    });
 
-      expect(settings.easy.max).toBe(5);
-      expect(settings.medium.max).toBe(10);
-      expect(settings.hard.max).toBe(12);
+    test('should initialize sound system', () => {
+      expect(magicMath.soundsEnabled).toBe(true); // Default to enabled
+      expect(magicMath.audioContext).toBe(null); // Not created until first sound
     });
   });
 
   describe('User Management', () => {
-    test('should set current user in localStorage', () => {
-      const username = 'TestUser';
-      localStorage.setItem('currentUser', username);
+    test('should get user difficulty from localStorage', () => {
+      localStorage.setItem('currentUser', 'TestUser');
+      localStorage.setItem('TestUserSettings', JSON.stringify({ difficulty: 'hard' }));
 
-      expect(localStorage.getItem('currentUser')).toBe(username);
+      const difficulty = magicMath.getUserDifficulty();
+      expect(difficulty).toBe('hard');
     });
 
-    test('should add user to user list', () => {
-      const userList = ['User1', 'User2'];
-      localStorage.setItem('currentUserList', JSON.stringify(userList));
-
-      const retrievedList = JSON.parse(localStorage.getItem('currentUserList'));
-      expect(retrievedList).toEqual(userList);
-      expect(retrievedList.length).toBe(2);
+    test('should default to medium difficulty if not set', () => {
+      localStorage.setItem('currentUser', 'NewUser');
+      const difficulty = magicMath.getUserDifficulty();
+      expect(difficulty).toBe('medium');
     });
 
-    test('should remove user from list', () => {
-      const userList = ['User1', 'User2', 'User3'];
-      const userToDelete = 'User2';
-      const updatedList = userList.filter(u => u !== userToDelete);
+    test('should set difficulty for current user', () => {
+      localStorage.setItem('currentUser', 'TestUser');
+      magicMath.setDifficulty('easy');
 
-      expect(updatedList).toEqual(['User1', 'User3']);
-      expect(updatedList.length).toBe(2);
+      const settings = JSON.parse(localStorage.getItem('TestUserSettings'));
+      expect(settings.difficulty).toBe('easy');
     });
 
-    test('should not allow "you!" as username', () => {
-      const invalidName = 'you!';
-      expect(invalidName).toBe('you!');
-    });
-  });
+    test('should delete user and their data', () => {
+      const username = 'UserToDelete';
+      localStorage.setItem('currentUserList', JSON.stringify(['User1', username, 'User3']));
+      localStorage.setItem(username + 'Log', JSON.stringify([{ test: 'data' }]));
 
-  describe('Difficulty Settings', () => {
-    test('should save difficulty setting per user', () => {
-      const username = 'TestUser';
-      const settings = { difficulty: 'hard' };
-      const key = username + 'Settings';
+      magicMath.deleteUser(username);
 
-      localStorage.setItem(key, JSON.stringify(settings));
-
-      const retrieved = JSON.parse(localStorage.getItem(key));
-      expect(retrieved.difficulty).toBe('hard');
-    });
-
-    test('should default to medium difficulty', () => {
-      const defaultDifficulty = 'medium';
-      expect(defaultDifficulty).toBe('medium');
-    });
-
-    test('should generate numbers within difficulty range', () => {
-      const ranges = {
-        easy: { min: 0, max: 5 },
-        medium: { min: 0, max: 10 },
-        hard: { min: 0, max: 12 }
-      };
-
-      // Test easy range
-      for (let i = 0; i < 100; i++) {
-        const num = Math.floor(Math.random() * (ranges.easy.max - ranges.easy.min + 1)) + ranges.easy.min;
-        expect(num).toBeGreaterThanOrEqual(0);
-        expect(num).toBeLessThanOrEqual(5);
-      }
+      const userList = JSON.parse(localStorage.getItem('currentUserList'));
+      expect(userList).toEqual(['User1', 'User3']);
+      expect(localStorage.getItem(username + 'Log')).toBe(null);
     });
   });
 
   describe('Game Logic', () => {
-    test('should calculate correct answer', () => {
-      const topNum = 5;
-      const bottomNum = 7;
-      const expectedAnswer = 35;
+    test('should generate problems within difficulty range', () => {
+      localStorage.setItem('currentUser', 'TestUser');
+      localStorage.setItem('TestUserSettings', JSON.stringify({ difficulty: 'easy' }));
 
-      expect(topNum * bottomNum).toBe(expectedAnswer);
+      // Generate multiple problems to test range
+      for (let i = 0; i < 20; i++) {
+        magicMath.getProblem();
+        const top = parseInt(document.getElementById('topNumber').textContent);
+        const bottom = parseInt(document.getElementById('bottomNumber').textContent);
+
+        expect(top).toBeGreaterThanOrEqual(0);
+        expect(top).toBeLessThanOrEqual(5);
+        expect(bottom).toBeGreaterThanOrEqual(0);
+        expect(bottom).toBeLessThanOrEqual(5);
+      }
     });
 
     test('should track correct answers', () => {
-      let correctCount = 0;
-      correctCount++;
-      correctCount++;
+      magicMath.correctProblems = 0;
+      magicMath.currentTry = 1;
+      magicMath.currentProblemData = { top: 5, bottom: 3, answer: 15, wasCorrect: false };
 
-      expect(correctCount).toBe(2);
+      document.getElementById('topNumber').textContent = '5';
+      document.getElementById('bottomNumber').textContent = '3';
+
+      magicMath.rightAnswer();
+
+      expect(magicMath.correctProblems).toBe(1);
+      expect(magicMath.currentProblemData.wasCorrect).toBe(true);
+    });
+
+    test('should only count as correct on first try', () => {
+      magicMath.correctProblems = 0;
+      magicMath.currentTry = 2; // Second try
+      magicMath.currentProblemData = { top: 5, bottom: 3, answer: 15, wasCorrect: false };
+
+      document.getElementById('topNumber').textContent = '5';
+      document.getElementById('bottomNumber').textContent = '3';
+
+      magicMath.rightAnswer();
+
+      expect(magicMath.correctProblems).toBe(0); // Should not increment
     });
 
     test('should track missed problems', () => {
-      let missedCount = 0;
-      missedCount++;
+      magicMath.missedProblems = 0;
+      magicMath.currentTry = 1;
 
-      expect(missedCount).toBe(1);
+      magicMath.wrongAnswer(42);
+
+      expect(magicMath.missedProblems).toBe(1);
     });
 
-    test('should calculate accuracy percentage', () => {
-      const correct = 8;
-      const missed = 2;
-      const total = correct + missed;
-      const accuracy = Math.round((correct / total) * 100);
+    test('should only count as missed on first wrong attempt', () => {
+      magicMath.missedProblems = 1;
+      magicMath.currentTry = 2;
 
-      expect(accuracy).toBe(80);
+      magicMath.wrongAnswer(42);
+
+      expect(magicMath.missedProblems).toBe(1); // Should not increment
+    });
+
+    test('should log game data', () => {
+      document.getElementById('CurrentUser').textContent = 'TestUser';
+      magicMath.missedProblems = 3;
+      magicMath.totalTime = 60.5;
+
+      magicMath.logGame();
+
+      const log = JSON.parse(localStorage.getItem('TestUserLog'));
+      expect(log).toBeDefined();
+      expect(log.length).toBe(1);
+      expect(log[0].NumberWrong).toBe(3);
+      expect(log[0].TotalTime).toBe(60.5);
+    });
+  });
+
+  describe('Progress Tracking', () => {
+    test('should update progress bar correctly', () => {
+      magicMath.currentProblem = 5;
+      magicMath.numberOfProblems = 10;
+
+      magicMath.updateProgressBar();
+
+      const progressBar = document.getElementById('progress-bar');
+      const progressText = document.getElementById('progress-text');
+
+      expect(progressBar.style.width).toBe('50%');
+      expect(progressText.textContent).toBe('Problem 5 of 10');
+    });
+
+    test('should calculate accuracy correctly', () => {
+      magicMath.correctProblems = 8;
+      magicMath.missedProblems = 2;
+
+      magicMath.updateStats();
+
+      const accuracy = document.getElementById('accuracy-percentage').textContent;
+      expect(accuracy).toBe('80%');
     });
 
     test('should handle 100% accuracy', () => {
-      const correct = 10;
-      const missed = 0;
-      const total = correct + missed;
-      const accuracy = total > 0 ? Math.round((correct / total) * 100) : 100;
+      magicMath.correctProblems = 10;
+      magicMath.missedProblems = 0;
 
-      expect(accuracy).toBe(100);
+      magicMath.updateStats();
+
+      const accuracy = document.getElementById('accuracy-percentage').textContent;
+      expect(accuracy).toBe('100%');
     });
 
-    test('should handle 0% accuracy', () => {
-      const correct = 0;
-      const missed = 10;
-      const total = correct + missed;
-      const accuracy = Math.round((correct / total) * 100);
+    test('should handle 0% accuracy with mistakes', () => {
+      magicMath.correctProblems = 0;
+      magicMath.missedProblems = 10;
 
-      expect(accuracy).toBe(0);
+      magicMath.updateStats();
+
+      const accuracy = document.getElementById('accuracy-percentage').textContent;
+      expect(accuracy).toBe('0%');
+    });
+  });
+
+  describe('Sound System', () => {
+    test('should toggle sound state', () => {
+      const initialState = magicMath.soundsEnabled;
+      magicMath.toggleSound();
+
+      expect(magicMath.soundsEnabled).toBe(!initialState);
     });
 
+    test('should save sound preference to localStorage', () => {
+      magicMath.soundsEnabled = true;
+      magicMath.toggleSound();
+
+      expect(localStorage.getItem('soundsEnabled')).toBe('false');
+    });
+
+    test('should play test sound when enabling', () => {
+      magicMath.soundsEnabled = false;
+      const playSoundSpy = jest.spyOn(magicMath, 'playSound');
+
+      magicMath.toggleSound();
+
+      expect(playSoundSpy).toHaveBeenCalledWith('correct');
+    });
+
+    test('should not play sound when disabled', () => {
+      magicMath.soundsEnabled = false;
+
+      // This should not throw an error and should return early
+      expect(() => magicMath.playSound('correct')).not.toThrow();
+    });
+
+    test('should create AudioContext when playing sound', () => {
+      magicMath.soundsEnabled = true;
+      magicMath.audioContext = null;
+
+      magicMath.playSound('correct');
+
+      expect(magicMath.audioContext).toBeDefined();
+    });
+  });
+
+  describe('Difficulty Settings', () => {
+    test('should update difficulty UI when setting difficulty', () => {
+      localStorage.setItem('currentUser', 'TestUser');
+
+      // Create difficulty buttons
+      const buttonsContainer = document.getElementById('difficulty-buttons');
+      buttonsContainer.innerHTML = `
+        <button class="difficulty-btn btn btn-outline-primary" data-difficulty="easy"></button>
+        <button class="difficulty-btn btn btn-outline-primary" data-difficulty="medium"></button>
+        <button class="difficulty-btn btn btn-outline-primary" data-difficulty="hard"></button>
+      `;
+
+      magicMath.setDifficulty('hard');
+
+      const hardBtn = document.querySelector('[data-difficulty="hard"]');
+      expect(hardBtn.classList.contains('btn-success')).toBe(true);
+      expect(hardBtn.classList.contains('active')).toBe(true);
+    });
+  });
+
+  describe('Problem History', () => {
     test('should track problem history', () => {
-      const history = [];
-      history.push({ top: 5, bottom: 3, answer: 15, wasCorrect: true });
-      history.push({ top: 7, bottom: 4, answer: 28, wasCorrect: false });
+      magicMath.problemHistory = [];
+      magicMath.currentTry = 1;
+      magicMath.currentProblemData = { top: 5, bottom: 3, answer: 15, wasCorrect: false };
 
-      expect(history.length).toBe(2);
-      expect(history[0].wasCorrect).toBe(true);
-      expect(history[1].wasCorrect).toBe(false);
+      document.getElementById('topNumber').textContent = '5';
+      document.getElementById('bottomNumber').textContent = '3';
+
+      magicMath.rightAnswer();
+
+      expect(magicMath.problemHistory.length).toBe(1);
+      expect(magicMath.problemHistory[0].wasCorrect).toBe(true);
     });
 
-    test('should filter mistakes from history', () => {
-      const history = [
+    test('should show mistakes review', () => {
+      magicMath.problemHistory = [
         { top: 5, bottom: 3, answer: 15, wasCorrect: true },
         { top: 7, bottom: 4, answer: 28, wasCorrect: false },
         { top: 6, bottom: 6, answer: 36, wasCorrect: false }
       ];
 
-      const mistakes = history.filter(p => !p.wasCorrect);
-      expect(mistakes.length).toBe(2);
+      magicMath.showMistakesReview();
+
+      const mistakesList = document.getElementById('mistakes-list');
+      expect(mistakesList.innerHTML).toContain('7');
+      expect(mistakesList.innerHTML).toContain('28');
+      expect(mistakesList.innerHTML).toContain('6');
+      expect(mistakesList.innerHTML).toContain('36');
     });
   });
 
-  describe('Progress Tracking', () => {
-    test('should calculate progress percentage', () => {
-      const currentProblem = 5;
-      const totalProblems = 10;
-      const percentage = (currentProblem / totalProblems) * 100;
-
-      expect(percentage).toBe(50);
+  describe('Animation Utilities', () => {
+    test('should have fadeIn method', () => {
+      expect(typeof magicMath.fadeIn).toBe('function');
     });
 
-    test('should show correct problem number', () => {
-      const current = 3;
-      const total = 10;
-      const text = `Problem ${current} of ${total}`;
-
-      expect(text).toBe('Problem 3 of 10');
+    test('should have fadeOut method', () => {
+      expect(typeof magicMath.fadeOut).toBe('function');
     });
 
-    test('should update progress bar correctly', () => {
-      const progressBar = document.getElementById('progress-bar');
-      const percentage = 70;
-      progressBar.style.width = `${percentage}%`;
+    test('should set display block when fading in', () => {
+      const element = document.getElementById('message');
+      element.style.display = 'none';
 
-      expect(progressBar.style.width).toBe('70%');
+      magicMath.fadeIn(element);
+
+      expect(element.style.display).toBe('block');
     });
   });
 
-  describe('Sound System', () => {
-    test('should initialize with sounds enabled by default', () => {
-      const soundsEnabled = localStorage.getItem('soundsEnabled') !== 'false';
-      expect(soundsEnabled).toBe(true);
-    });
+  describe('Integration Tests', () => {
+    test('should handle complete game flow', () => {
+      localStorage.setItem('currentUser', 'TestUser');
+      magicMath.currentProblem = 1;
+      magicMath.numberOfProblems = 2;
 
-    test('should toggle sound state', () => {
-      let soundsEnabled = true;
-      soundsEnabled = !soundsEnabled;
+      // First problem
+      magicMath.getProblem();
+      expect(document.getElementById('topNumber').textContent).not.toBe('');
 
-      expect(soundsEnabled).toBe(false);
-    });
-
-    test('should save sound preference', () => {
-      localStorage.setItem('soundsEnabled', 'false');
-      expect(localStorage.getItem('soundsEnabled')).toBe('false');
-    });
-
-    test('should create AudioContext when playing sound', () => {
-      const ctx = new AudioContext();
-      expect(ctx).toBeDefined();
-      expect(ctx.createOscillator).toBeDefined();
-      expect(ctx.createGain).toBeDefined();
-    });
-  });
-
-  describe('Game Logging', () => {
-    test('should save game log to localStorage', () => {
-      const username = 'TestUser';
-      const key = username + 'Log';
-      const log = {
-        Date: new Date().toISOString(),
-        NumberWrong: 2,
-        TotalTime: 45.5
-      };
-
-      const userLog = [log];
-      localStorage.setItem(key, JSON.stringify(userLog));
-
-      const retrieved = JSON.parse(localStorage.getItem(key));
-      expect(retrieved.length).toBe(1);
-      expect(retrieved[0].NumberWrong).toBe(2);
-    });
-
-    test('should append to existing log', () => {
-      const username = 'TestUser';
-      const key = username + 'Log';
-      const existingLog = [
-        { Date: '2024-01-01', NumberWrong: 1, TotalTime: 30 }
-      ];
-
-      localStorage.setItem(key, JSON.stringify(existingLog));
-
-      const userLog = JSON.parse(localStorage.getItem(key));
-      userLog.push({ Date: '2024-01-02', NumberWrong: 2, TotalTime: 35 });
-      localStorage.setItem(key, JSON.stringify(userLog));
-
-      const retrieved = JSON.parse(localStorage.getItem(key));
-      expect(retrieved.length).toBe(2);
-    });
-  });
-
-  describe('DOM Manipulation', () => {
-    test('should update current user display', () => {
-      const userElement = document.getElementById('CurrentUser');
-      userElement.textContent = 'TestUser';
-
-      expect(userElement.textContent).toBe('TestUser');
-    });
-
-    test('should display problem numbers', () => {
-      const topNum = document.getElementById('topNumber');
-      const bottomNum = document.getElementById('bottomNumber');
-
-      topNum.textContent = '5';
-      bottomNum.textContent = '7';
-
-      expect(topNum.textContent).toBe('5');
-      expect(bottomNum.textContent).toBe('7');
-    });
-
-    test('should show/hide sections', () => {
-      const section = document.getElementById('body');
-      section.style.display = 'none';
-      expect(section.style.display).toBe('none');
-
-      section.style.display = 'block';
-      expect(section.style.display).toBe('block');
-    });
-
-    test('should update stats display', () => {
-      document.getElementById('correct-count').textContent = '8';
-      document.getElementById('missed-count').textContent = '2';
-      document.getElementById('accuracy-percentage').textContent = '80%';
-
-      expect(document.getElementById('correct-count').textContent).toBe('8');
-      expect(document.getElementById('missed-count').textContent).toBe('2');
-      expect(document.getElementById('accuracy-percentage').textContent).toBe('80%');
-    });
-  });
-
-  describe('Input Validation', () => {
-    test('should parse guess as integer', () => {
-      const guessValue = '42';
-      const parsed = parseInt(guessValue);
-
-      expect(parsed).toBe(42);
-      expect(typeof parsed).toBe('number');
-    });
-
-    test('should handle empty guess', () => {
-      const guessValue = '';
-      expect(guessValue).toBe('');
-      expect(!guessValue).toBe(true);
-    });
-
-    test('should trim whitespace from username', () => {
-      const username = '  TestUser  ';
-      const trimmed = username.trim();
-
-      expect(trimmed).toBe('TestUser');
-    });
-  });
-
-  describe('Time Tracking', () => {
-    test('should calculate elapsed time', () => {
-      const startTime = 1000;
-      const endTime = 46000;
-      const elapsed = (endTime - startTime) / 1000;
-
-      expect(elapsed).toBe(45);
-    });
-
-    test('should round time to nearest second', () => {
-      const time = 45.7;
-      const rounded = Math.round(time);
-
-      expect(rounded).toBe(46);
+      // Update stats
+      magicMath.updateStats();
+      expect(document.getElementById('correct-count').textContent).toBe('0');
     });
   });
 });

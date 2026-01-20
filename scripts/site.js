@@ -269,7 +269,7 @@ class MagicMath {
     const difficulty = this.getUserDifficulty();
     const range = this.difficultySettings[difficulty];
 
-    const topNum = Math.floor(Math.random() * (range.max - range.min + 1)) + range.min;
+    const topNum = x; //Math.floor(Math.random() * (range.max - range.min + 1)) + range.min;
     const bottomNum = Math.floor(Math.random() * (range.max - range.min + 1)) + range.min;
 
     // Store current problem
@@ -765,3 +765,8 @@ class MagicMath {
 document.addEventListener('DOMContentLoaded', () => {
   window.magicMath = new MagicMath();
 });
+
+// Export for testing
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = MagicMath;
+}
