@@ -761,6 +761,11 @@ class MagicMath {
   }
 }
 
+// Expose MagicMath class globally for browser and testing
+if (typeof window !== 'undefined') {
+  window.MagicMath = MagicMath;
+}
+
 // Initialize app when DOM is ready (skip if in test mode)
 document.addEventListener('DOMContentLoaded', () => {
   if (!window.isTestMode) {
@@ -768,7 +773,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });
 
-// Export for testing
+// Export for Node.js/Jest testing
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = MagicMath;
 }
