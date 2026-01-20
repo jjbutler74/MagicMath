@@ -1,0 +1,26 @@
+{
+  "name": "magic-math",
+  "version": "2.0.0",
+  "description": "Interactive multiplication practice game for students",
+  "main": "index.html",
+  "scripts": {
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage"
+  },
+  "keywords": [
+    "education",
+    "math",
+    "multiplication",
+    "game"
+  ],
+  "author": "Jason Butler",
+  "license": "MIT",
+  "devDependencies": {
+    "@babel/core": "^7.23.0",
+    "@babel/preset-env": "^7.23.0",
+    "babel-jest": "^29.7.0",
+    "jest": "^29.7.0",
+    "jest-environment-jsdom": "^29.7.0"
+  }
+}
