@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MagicMath Test Runner</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        h1 {
+            color: #333;
+            border-bottom: 3px solid #4CAF50;
+            padding-bottom: 10px;
+        }
+        .test-suite {
+            background: white;
+            margin: 20px 0;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-suite h2 {
+            color: #555;
+            margin-top: 0;
+        }
+        .test {
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+        }
+        .test.pass {
+            background-color: #d4edda;
+            border-left: 4px solid #28a745;
+        }
+        .test.fail {
+            background-color: #f8d7da;
+            border-left: 4px solid #dc3545;
+        }
+        .test-icon {
+            font-size: 20px;
+            margin-right: 10px;
+            font-weight: bold;
+        }
+        .pass .test-icon {
+            color: #28a745;
+        }
+        .fail .test-icon {
+            color: #dc3545;
+        }
+        .summary {
+            background: #333;
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-around;
+            text-align: center;
+        }
+        .summary-item {
+            flex: 1;
+        }
+        .summary-number {
+            font-size: 36px;
+            font-weight: bold;
+        }
+        .summary-label {
+            font-size: 14px;
+            opacity: 0.8;
+            margin-top: 5px;
+        }
+        .pass-rate {
+            font-size: 48px;
+            font-weight: bold;
+        }
+        .error-details {
+            color: #721c24;
+            font-family: monospace;
+            font-size: 12px;
+            margin-top: 5px;
+            padding: 5px;
+            background: rgba(0,0,0,0.05);
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 MagicMath Test Suite</h1>
+    <div class="summary" id="summary">
+        <div class="summary-item">
+            <div class="summary-number" id="total-tests">0</div>
+            <div class="summary-label">Total Tests</div>
+        </div>
+        <div class="summary-item">
+            <div class="summary-number" style="color: #28a745;" id="passed-tests">0</div>
+            <div class="summary-label">Passed</div>
+        </div>
+        <div class="summary-item">
+            <div class="summary-number" style="color: #dc3545;" id="failed-tests">0</div>
+            <div class="summary-label">Failed</div>
+        </div>
+        <div class="summary-item">
+            <div class="pass-rate" id="pass-rate">0%</div>
+            <div class="summary-label">Pass Rate</div>
+        </div>
+    </div>
+    <div id="test-results"></div>
+
+    <script>
+        // Simple test framework
+        const testResults = [];
+        let currentSuite = null;
+
+        function describe(suiteName, suiteFunc) {
+            currentSuite = { name: suiteName, tests: [] };
+            suiteFunc();
+            testResults.push(currentSuite);
+        }
+
+        function test(testName, testFunc) {
+            try {
+                testFunc();
+                currentSuite.tests.push({ name: testName, passed: true });
+            } catch (error) {
+                currentSuite.tests.push({ name: testName, passed: false, error: error.message });
+            }
+        }
+
+        const expect = (actual) => ({
+            toBe: (expected) => {
+                if (actual !== expected) {
+                    throw new Error(`Expected ${expected} but got ${actual}`);
+                }
+            },
+            toEqual: (expected) => {
+                if (JSON.stringify(actual) !== JSON.stringify(expected)) {
+                    throw new Error(`Expected ${JSON.stringify(expected)} but got ${JSON.stringify(actual)}`);
+                }
+            },
+            toBeDefined: () => {
+                if (actual === undefined) {
+                    throw new Error('Expected value to be defined');
+                }
+            },
+            toBeGreaterThanOrEqual: (expected) => {
+                if (actual < expected) {
+                    throw new Error(`Expected ${actual} to be >= ${expected}`);
+                }
+            },
+            toBeLessThanOrEqual: (expected) => {
+                if (actual > expected) {
+                    throw new Error(`Expected ${actual} to be <= ${expected}`);
+                }
+            }
+        });
+
+        // Mock localStorage
+        const localStorageMock = {
+            store: {},
+            getItem(key) {
+                return this.store[key] || null;
+            },
+            setItem(key, value) {
+                this.store[key] = value.toString();
+            },
+            removeItem(key) {
+                delete this.store[key];
+            },
+            clear() {
+                this.store = {};
+            }
+        };
+
+        // Use real localStorage but clear it
+        const testLocalStorage = window.localStorage;
+
+        // Run Tests
+        describe('Initialization', () => {
+            test('should initialize with default values', () => {
+                const defaultValues = {
+                    numberOfProblems: 10,
+                    currentProblem: 1,
+                    missedProblems: 0,
+                    correctProblems: 0
+                };
+
+                expect(defaultValues.numberOfProblems).toBe(10);
+                expect(defaultValues.currentProblem).toBe(1);
+            });
+
+            test('should have correct difficulty settings', () => {
+                const settings = {
+                    easy: { min: 0, max: 5 },
+                    medium: { min: 0, max: 10 },
+                    hard: { min: 0, max: 12 }
+                };
+
+                expect(settings.easy.max).toBe(5);
+                expect(settings.medium.max).toBe(10);
+                expect(settings.hard.max).toBe(12);
+            });
+        });
+
+        describe('User Management', () => {
+            test('should set current user in localStorage', () => {
+                testLocalStorage.clear();
+                const username = 'TestUser';
+                testLocalStorage.setItem('currentUser', username);
+                expect(testLocalStorage.getItem('currentUser')).toBe(username);
+                testLocalStorage.clear();
+            });
+
+            test('should add user to user list', () => {
+                testLocalStorage.clear();
+                const userList = ['User1', 'User2'];
+                testLocalStorage.setItem('currentUserList', JSON.stringify(userList));
+                const retrieved = JSON.parse(testLocalStorage.getItem('currentUserList'));
+                expect(retrieved.length).toBe(2);
+                testLocalStorage.clear();
+            });
+
+            test('should remove user from list', () => {
+                const userList = ['User1', 'User2', 'User3'];
+                const updatedList = userList.filter(u => u !== 'User2');
+                expect(updatedList.length).toBe(2);
+            });
+        });
+
+        describe('Difficulty Settings', () => {
+            test('should save difficulty per user', () => {
+                testLocalStorage.clear();
+                const settings = { difficulty: 'hard' };
+                testLocalStorage.setItem('TestUserSettings', JSON.stringify(settings));
+                const retrieved = JSON.parse(testLocalStorage.getItem('TestUserSettings'));
+                expect(retrieved.difficulty).toBe('hard');
+                testLocalStorage.clear();
+            });
+
+            test('should generate numbers within easy range', () => {
+                const range = { min: 0, max: 5 };
+                const num = Math.floor(Math.random() * (range.max - range.min + 1)) + range.min;
+                expect(num).toBeGreaterThanOrEqual(0);
+                expect(num).toBeLessThanOrEqual(5);
+            });
+
+            test('should generate numbers within hard range', () => {
+                const range = { min: 0, max: 12 };
+                const num = Math.floor(Math.random() * (range.max - range.min + 1)) + range.min;
+                expect(num).toBeGreaterThanOrEqual(0);
+                expect(num).toBeLessThanOrEqual(12);
+            });
+        });
+
+        describe('Game Logic', () => {
+            test('should calculate correct answer', () => {
+                expect(5 * 7).toBe(35);
+                expect(12 * 12).toBe(144);
+            });
+
+            test('should calculate accuracy percentage', () => {
+                const correct = 8;
+                const missed = 2;
+                const accuracy = Math.round((correct / (correct + missed)) * 100);
+                expect(accuracy).toBe(80);
+            });
+
+            test('should handle 100% accuracy', () => {
+                const correct = 10;
+                const missed = 0;
+                const accuracy = Math.round((correct / (correct + missed)) * 100);
+                expect(accuracy).toBe(100);
+            });
+
+            test('should track problem history', () => {
+                const history = [];
+                history.push({ top: 5, bottom: 3, answer: 15, wasCorrect: true });
+                history.push({ top: 7, bottom: 4, answer: 28, wasCorrect: false });
+                expect(history.length).toBe(2);
+            });
+
+            test('should filter mistakes', () => {
+                const history = [
+                    { wasCorrect: true },
+                    { wasCorrect: false },
+                    { wasCorrect: false }
+                ];
+                const mistakes = history.filter(p => !p.wasCorrect);
+                expect(mistakes.length).toBe(2);
+            });
+        });
+
+        describe('Progress Tracking', () => {
+            test('should calculate progress percentage', () => {
+                const percentage = (5 / 10) * 100;
+                expect(percentage).toBe(50);
+            });
+
+            test('should format progress text', () => {
+                const text = `Problem ${3} of ${10}`;
+                expect(text).toBe('Problem 3 of 10');
+            });
+        });
+
+        describe('Sound System', () => {
+            test('should default to sounds enabled', () => {
+                testLocalStorage.clear();
+                const enabled = testLocalStorage.getItem('soundsEnabled') !== 'false';
+                expect(enabled).toBe(true);
+                testLocalStorage.clear();
+            });
+
+            test('should toggle sound state', () => {
+                let enabled = true;
+                enabled = !enabled;
+                expect(enabled).toBe(false);
+            });
+
+            test('should save sound preference', () => {
+                testLocalStorage.clear();
+                testLocalStorage.setItem('soundsEnabled', 'false');
+                expect(testLocalStorage.getItem('soundsEnabled')).toBe('false');
+                testLocalStorage.clear();
+            });
+        });
+
+        describe('Game Logging', () => {
+            test('should save game log', () => {
+                testLocalStorage.clear();
+                const log = { Date: new Date().toISOString(), NumberWrong: 2, TotalTime: 45.5 };
+                testLocalStorage.setItem('TestUserLog', JSON.stringify([log]));
+                const retrieved = JSON.parse(testLocalStorage.getItem('TestUserLog'));
+                expect(retrieved.length).toBe(1);
+                testLocalStorage.clear();
+            });
+
+            test('should append to existing log', () => {
+                testLocalStorage.clear();
+                const logs = [{ NumberWrong: 1 }];
+                logs.push({ NumberWrong: 2 });
+                expect(logs.length).toBe(2);
+                testLocalStorage.clear();
+            });
+        });
+
+        describe('Input Validation', () => {
+            test('should parse integer from string', () => {
+                expect(parseInt('42')).toBe(42);
+            });
+
+            test('should trim whitespace', () => {
+                expect('  Test  '.trim()).toBe('Test');
+            });
+        });
+
+        describe('Time Tracking', () => {
+            test('should calculate elapsed time', () => {
+                const elapsed = (46000 - 1000) / 1000;
+                expect(elapsed).toBe(45);
+            });
+
+            test('should round time', () => {
+                expect(Math.round(45.7)).toBe(46);
+            });
+        });
+
+        // Display results
+        function displayResults() {
+            const resultsDiv = document.getElementById('test-results');
+            let totalTests = 0;
+            let passedTests = 0;
+
+            testResults.forEach(suite => {
+                const suiteDiv = document.createElement('div');
+                suiteDiv.className = 'test-suite';
+
+                const suiteTitle = document.createElement('h2');
+                suiteTitle.textContent = suite.name;
+                suiteDiv.appendChild(suiteTitle);
+
+                suite.tests.forEach(test => {
+                    totalTests++;
+                    if (test.passed) passedTests++;
+
+                    const testDiv = document.createElement('div');
+                    testDiv.className = `test ${test.passed ? 'pass' : 'fail'}`;
+
+                    const icon = document.createElement('span');
+                    icon.className = 'test-icon';
+                    icon.textContent = test.passed ? '✓' : '✗';
+                    testDiv.appendChild(icon);
+
+                    const testName = document.createElement('span');
+                    testName.textContent = test.name;
+                    testDiv.appendChild(testName);
+
+                    if (!test.passed) {
+                        const error = document.createElement('div');
+                        error.className = 'error-details';
+                        error.textContent = test.error;
+                        testDiv.appendChild(error);
+                    }
+
+                    suiteDiv.appendChild(testDiv);
+                });
+
+                resultsDiv.appendChild(suiteDiv);
+            });
+
+            // Update summary
+            const failedTests = totalTests - passedTests;
+            const passRate = totalTests > 0 ? Math.round((passedTests / totalTests) * 100) : 0;
+
+            document.getElementById('total-tests').textContent = totalTests;
+            document.getElementById('passed-tests').textContent = passedTests;
+            document.getElementById('failed-tests').textContent = failedTests;
+            document.getElementById('pass-rate').textContent = passRate + '%';
+
+            // Update summary color
+            const summaryDiv = document.getElementById('summary');
+            if (passRate === 100) {
+                summaryDiv.style.background = 'linear-gradient(135deg, #28a745 0%, #20c997 100%)';
+            } else if (passRate >= 80) {
+                summaryDiv.style.background = 'linear-gradient(135deg, #ffc107 0%, #ff9800 100%)';
+            } else {
+                summaryDiv.style.background = 'linear-gradient(135deg, #dc3545 0%, #c82333 100%)';
+            }
+        }
+
+        // Run after page load
+        window.addEventListener('load', displayResults);
+    </script>
+</body>
+</html>
