@@ -160,6 +160,11 @@
         <div id="mistakes-list"></div>
     </div>
 
+    <!-- Set test mode flag before loading site.js -->
+    <script>
+        window.isTestMode = true;
+    </script>
+
     <!-- Load the actual MagicMath class -->
     <script src="scripts/site.js"></script>
 
@@ -223,9 +228,6 @@
 
         // Wait for site.js to load, then run tests
         window.addEventListener('DOMContentLoaded', () => {
-            // Prevent the actual app from initializing during tests
-            document.removeEventListener('DOMContentLoaded', window.magicMath);
-
             let magicMath;
 
             // Helper to reset test environment
