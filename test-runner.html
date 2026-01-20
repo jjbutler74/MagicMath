@@ -89,6 +89,9 @@
             background: rgba(0,0,0,0.05);
             border-radius: 3px;
         }
+        #test-dom {
+            display: none;
+        }
     </style>
 </head>
 <body>
@@ -112,6 +115,53 @@
         </div>
     </div>
     <div id="test-results"></div>
+
+    <!-- Hidden test DOM -->
+    <div id="test-dom">
+        <div id="CurrentUser"></div>
+        <div id="start-game-section" style="display: none;"></div>
+        <div id="body" style="display: none;"></div>
+        <div id="game-over-section" style="display: none;"></div>
+        <div id="settings-section" style="display: none;"></div>
+        <div id="change-user-section" style="display: none;"></div>
+        <div id="report-section" style="display: none;"></div>
+        <div id="review-mistakes-section" style="display: none;"></div>
+        <div id="topNumber"></div>
+        <div id="bottomNumber"></div>
+        <div id="operator"></div>
+        <input id="guess" />
+        <div id="message" style="display: none;"></div>
+        <div id="progress-bar"></div>
+        <div id="progress-text"></div>
+        <div id="progress-percentage"></div>
+        <div id="correct-count">0</div>
+        <div id="missed-count">0</div>
+        <div id="accuracy-percentage">100%</div>
+        <div id="game-over-message"></div>
+        <button id="review-mistakes-button" style="display: none;"></button>
+        <div id="settings-user-name"></div>
+        <div id="difficulty-buttons"></div>
+        <button id="sound-toggle">
+            <i id="sound-icon"></i>
+            <span class="sound-status"></span>
+        </button>
+        <div id="change-user-buttons"></div>
+        <div id="change-user-message"></div>
+        <input id="new-user" />
+        <div id="dialogMsg"></div>
+        <div id="msgDialog"></div>
+        <form id="submitted-guess"></form>
+        <form id="add-user"></form>
+        <button id="change-user-button"></button>
+        <button id="see-report-button"></button>
+        <button id="settings-button"></button>
+        <button id="close-settings-button"></button>
+        <canvas id="myChart"></canvas>
+        <div id="mistakes-list"></div>
+    </div>
+
+    <!-- Load the actual MagicMath class -->
+    <script src="scripts/site.js"></script>
 
     <script>
         // Simple test framework
@@ -149,6 +199,11 @@
                     throw new Error('Expected value to be defined');
                 }
             },
+            toBeNull: () => {
+                if (actual !== null) {
+                    throw new Error(`Expected null but got ${actual}`);
+                }
+            },
             toBeGreaterThanOrEqual: (expected) => {
                 if (actual < expected) {
                     throw new Error(`Expected ${actual} to be >= ${expected}`);
@@ -158,219 +213,330 @@
                 if (actual > expected) {
                     throw new Error(`Expected ${actual} to be <= ${expected}`);
                 }
+            },
+            toContain: (expected) => {
+                if (!actual.includes(expected)) {
+                    throw new Error(`Expected "${actual}" to contain "${expected}"`);
+                }
             }
         });
 
-        // Mock localStorage
-        const localStorageMock = {
-            store: {},
-            getItem(key) {
-                return this.store[key] || null;
-            },
-            setItem(key, value) {
-                this.store[key] = value.toString();
-            },
-            removeItem(key) {
-                delete this.store[key];
-            },
-            clear() {
-                this.store = {};
+        // Wait for site.js to load, then run tests
+        window.addEventListener('DOMContentLoaded', () => {
+            // Prevent the actual app from initializing during tests
+            document.removeEventListener('DOMContentLoaded', window.magicMath);
+
+            let magicMath;
+
+            // Helper to reset test environment
+            function resetTestEnvironment() {
+                localStorage.clear();
+                document.getElementById('CurrentUser').textContent = '';
+                document.getElementById('guess').value = '';
+                document.getElementById('topNumber').textContent = '';
+                document.getElementById('bottomNumber').textContent = '';
+                document.getElementById('correct-count').textContent = '0';
+                document.getElementById('missed-count').textContent = '0';
+                document.getElementById('accuracy-percentage').textContent = '100%';
             }
-        };
 
-        // Use real localStorage but clear it
-        const testLocalStorage = window.localStorage;
+            // Run Tests on the REAL MagicMath class
+            describe('MagicMath Class - Initialization', () => {
+                test('should initialize with correct default values', () => {
+                    resetTestEnvironment();
+                    magicMath = new MagicMath();
+                    expect(magicMath.numberOfProblems).toBe(10);
+                    expect(magicMath.currentProblem).toBe(1);
+                    expect(magicMath.missedProblems).toBe(0);
+                    expect(magicMath.correctProblems).toBe(0);
+                });
 
-        // Run Tests
-        describe('Initialization', () => {
-            test('should initialize with default values', () => {
-                const defaultValues = {
-                    numberOfProblems: 10,
-                    currentProblem: 1,
-                    missedProblems: 0,
-                    correctProblems: 0
-                };
+                test('should have correct difficulty settings', () => {
+                    resetTestEnvironment();
+                    magicMath = new MagicMath();
+                    expect(magicMath.difficultySettings.easy.max).toBe(5);
+                    expect(magicMath.difficultySettings.medium.max).toBe(10);
+                    expect(magicMath.difficultySettings.hard.max).toBe(12);
+                });
 
-                expect(defaultValues.numberOfProblems).toBe(10);
-                expect(defaultValues.currentProblem).toBe(1);
+                test('should initialize sound system', () => {
+                    resetTestEnvironment();
+                    magicMath = new MagicMath();
+                    expect(magicMath.soundsEnabled).toBe(true);
+                    expect(magicMath.audioContext).toBeNull();
+                });
             });
 
-            test('should have correct difficulty settings', () => {
-                const settings = {
-                    easy: { min: 0, max: 5 },
-                    medium: { min: 0, max: 10 },
-                    hard: { min: 0, max: 12 }
-                };
+            describe('MagicMath Class - User Management', () => {
+                test('should get user difficulty from localStorage', () => {
+                    resetTestEnvironment();
+                    localStorage.setItem('currentUser', 'TestUser');
+                    localStorage.setItem('TestUserSettings', JSON.stringify({ difficulty: 'hard' }));
+                    magicMath = new MagicMath();
+                    const difficulty = magicMath.getUserDifficulty();
+                    expect(difficulty).toBe('hard');
+                });
 
-                expect(settings.easy.max).toBe(5);
-                expect(settings.medium.max).toBe(10);
-                expect(settings.hard.max).toBe(12);
+                test('should default to medium difficulty', () => {
+                    resetTestEnvironment();
+                    localStorage.setItem('currentUser', 'NewUser');
+                    magicMath = new MagicMath();
+                    const difficulty = magicMath.getUserDifficulty();
+                    expect(difficulty).toBe('medium');
+                });
+
+                test('should set difficulty for current user', () => {
+                    resetTestEnvironment();
+                    localStorage.setItem('currentUser', 'TestUser');
+                    magicMath = new MagicMath();
+                    magicMath.setDifficulty('easy');
+                    const settings = JSON.parse(localStorage.getItem('TestUserSettings'));
+                    expect(settings.difficulty).toBe('easy');
+                });
+
+                test('should delete user and their data', () => {
+                    resetTestEnvironment();
+                    magicMath = new MagicMath();
+                    const username = 'UserToDelete';
+                    localStorage.setItem('currentUserList', JSON.stringify(['User1', username, 'User3']));
+                    localStorage.setItem(username + 'Log', JSON.stringify([{ test: 'data' }]));
+
+                    magicMath.deleteUser(username);
+
+                    const userList = JSON.parse(localStorage.getItem('currentUserList'));
+                    expect(userList.length).toBe(2);
+                    expect(localStorage.getItem(username + 'Log')).toBeNull();
+                });
             });
+
+            describe('MagicMath Class - Game Logic', () => {
+                test('should generate problems within easy range', () => {
+                    resetTestEnvironment();
+                    localStorage.setItem('currentUser', 'TestUser');
+                    localStorage.setItem('TestUserSettings', JSON.stringify({ difficulty: 'easy' }));
+                    magicMath = new MagicMath();
+
+                    magicMath.getProblem();
+                    const top = parseInt(document.getElementById('topNumber').textContent);
+                    const bottom = parseInt(document.getElementById('bottomNumber').textContent);
+
+                    expect(top).toBeGreaterThanOrEqual(0);
+                    expect(top).toBeLessThanOrEqual(5);
+                    expect(bottom).toBeGreaterThanOrEqual(0);
+                    expect(bottom).toBeLessThanOrEqual(5);
+                });
+
+                test('should track correct answers', () => {
+                    resetTestEnvironment();
+                    magicMath = new MagicMath();
+                    magicMath.correctProblems = 0;
+                    magicMath.currentTry = 1;
+                    magicMath.currentProblemData = { top: 5, bottom: 3, answer: 15, wasCorrect: false };
+                    document.getElementById('topNumber').textContent = '5';
+                    document.getElementById('bottomNumber').textContent = '3';
+
+                    magicMath.rightAnswer();
+
+                    expect(magicMath.correctProblems).toBe(1);
+                    expect(magicMath.currentProblemData.wasCorrect).toBe(true);
+                });
+
+                test('should only count as correct on first try', () => {
+                    resetTestEnvironment();
+                    magicMath = new MagicMath();
+                    magicMath.correctProblems = 0;
+                    magicMath.currentTry = 2;
+                    magicMath.currentProblemData = { top: 5, bottom: 3, answer: 15, wasCorrect: false };
+
+                    magicMath.rightAnswer();
+
+                    expect(magicMath.correctProblems).toBe(0);
+                });
+
+                test('should track missed problems', () => {
+                    resetTestEnvironment();
+                    magicMath = new MagicMath();
+                    magicMath.missedProblems = 0;
+                    magicMath.currentTry = 1;
+
+                    magicMath.wrongAnswer(42);
+
+                    expect(magicMath.missedProblems).toBe(1);
+                });
+
+                test('should only count as missed on first wrong attempt', () => {
+                    resetTestEnvironment();
+                    magicMath = new MagicMath();
+                    magicMath.missedProblems = 1;
+                    magicMath.currentTry = 2;
+
+                    magicMath.wrongAnswer(42);
+
+                    expect(magicMath.missedProblems).toBe(1);
+                });
+
+                test('should log game data', () => {
+                    resetTestEnvironment();
+                    magicMath = new MagicMath();
+                    document.getElementById('CurrentUser').textContent = 'TestUser';
+                    magicMath.missedProblems = 3;
+                    magicMath.totalTime = 60.5;
+
+                    magicMath.logGame();
+
+                    const log = JSON.parse(localStorage.getItem('TestUserLog'));
+                    expect(log.length).toBe(1);
+                    expect(log[0].NumberWrong).toBe(3);
+                });
+            });
+
+            describe('MagicMath Class - Progress Tracking', () => {
+                test('should update progress bar correctly', () => {
+                    resetTestEnvironment();
+                    magicMath = new MagicMath();
+                    magicMath.currentProblem = 5;
+                    magicMath.numberOfProblems = 10;
+
+                    magicMath.updateProgressBar();
+
+                    const progressBar = document.getElementById('progress-bar');
+                    const progressText = document.getElementById('progress-text');
+                    expect(progressBar.style.width).toBe('50%');
+                    expect(progressText.textContent).toBe('Problem 5 of 10');
+                });
+
+                test('should calculate accuracy correctly', () => {
+                    resetTestEnvironment();
+                    magicMath = new MagicMath();
+                    magicMath.correctProblems = 8;
+                    magicMath.missedProblems = 2;
+
+                    magicMath.updateStats();
+
+                    const accuracy = document.getElementById('accuracy-percentage').textContent;
+                    expect(accuracy).toBe('80%');
+                });
+
+                test('should handle 100% accuracy', () => {
+                    resetTestEnvironment();
+                    magicMath = new MagicMath();
+                    magicMath.correctProblems = 10;
+                    magicMath.missedProblems = 0;
+
+                    magicMath.updateStats();
+
+                    const accuracy = document.getElementById('accuracy-percentage').textContent;
+                    expect(accuracy).toBe('100%');
+                });
+
+                test('should handle 0% accuracy', () => {
+                    resetTestEnvironment();
+                    magicMath = new MagicMath();
+                    magicMath.correctProblems = 0;
+                    magicMath.missedProblems = 10;
+
+                    magicMath.updateStats();
+
+                    const accuracy = document.getElementById('accuracy-percentage').textContent;
+                    expect(accuracy).toBe('0%');
+                });
+            });
+
+            describe('MagicMath Class - Sound System', () => {
+                test('should toggle sound state', () => {
+                    resetTestEnvironment();
+                    magicMath = new MagicMath();
+                    const initialState = magicMath.soundsEnabled;
+
+                    magicMath.toggleSound();
+
+                    expect(magicMath.soundsEnabled).toBe(!initialState);
+                });
+
+                test('should save sound preference to localStorage', () => {
+                    resetTestEnvironment();
+                    magicMath = new MagicMath();
+                    magicMath.soundsEnabled = true;
+
+                    magicMath.toggleSound();
+
+                    expect(localStorage.getItem('soundsEnabled')).toBe('false');
+                });
+
+                test('should create AudioContext when playing sound', () => {
+                    resetTestEnvironment();
+                    magicMath = new MagicMath();
+                    magicMath.soundsEnabled = true;
+                    magicMath.audioContext = null;
+
+                    magicMath.playSound('correct');
+
+                    expect(magicMath.audioContext).toBeDefined();
+                });
+            });
+
+            describe('MagicMath Class - Problem History', () => {
+                test('should track problem history', () => {
+                    resetTestEnvironment();
+                    magicMath = new MagicMath();
+                    magicMath.problemHistory = [];
+                    magicMath.currentTry = 1;
+                    magicMath.currentProblemData = { top: 5, bottom: 3, answer: 15, wasCorrect: false };
+                    document.getElementById('topNumber').textContent = '5';
+                    document.getElementById('bottomNumber').textContent = '3';
+
+                    magicMath.rightAnswer();
+
+                    expect(magicMath.problemHistory.length).toBe(1);
+                    expect(magicMath.problemHistory[0].wasCorrect).toBe(true);
+                });
+
+                test('should show mistakes review', () => {
+                    resetTestEnvironment();
+                    magicMath = new MagicMath();
+                    magicMath.problemHistory = [
+                        { top: 5, bottom: 3, answer: 15, wasCorrect: true },
+                        { top: 7, bottom: 4, answer: 28, wasCorrect: false },
+                        { top: 6, bottom: 6, answer: 36, wasCorrect: false }
+                    ];
+
+                    magicMath.showMistakesReview();
+
+                    const mistakesList = document.getElementById('mistakes-list');
+                    expect(mistakesList.innerHTML).toContain('7');
+                    expect(mistakesList.innerHTML).toContain('28');
+                });
+            });
+
+            describe('MagicMath Class - Animation Utilities', () => {
+                test('should have fadeIn method', () => {
+                    resetTestEnvironment();
+                    magicMath = new MagicMath();
+                    expect(typeof magicMath.fadeIn).toBe('function');
+                });
+
+                test('should have fadeOut method', () => {
+                    resetTestEnvironment();
+                    magicMath = new MagicMath();
+                    expect(typeof magicMath.fadeOut).toBe('function');
+                });
+
+                test('should set display block when fading in', () => {
+                    resetTestEnvironment();
+                    magicMath = new MagicMath();
+                    const element = document.getElementById('message');
+                    element.style.display = 'none';
+
+                    magicMath.fadeIn(element);
+
+                    expect(element.style.display).toBe('block');
+                });
+            });
+
+            // Display results
+            displayResults();
         });
 
-        describe('User Management', () => {
-            test('should set current user in localStorage', () => {
-                testLocalStorage.clear();
-                const username = 'TestUser';
-                testLocalStorage.setItem('currentUser', username);
-                expect(testLocalStorage.getItem('currentUser')).toBe(username);
-                testLocalStorage.clear();
-            });
-
-            test('should add user to user list', () => {
-                testLocalStorage.clear();
-                const userList = ['User1', 'User2'];
-                testLocalStorage.setItem('currentUserList', JSON.stringify(userList));
-                const retrieved = JSON.parse(testLocalStorage.getItem('currentUserList'));
-                expect(retrieved.length).toBe(2);
-                testLocalStorage.clear();
-            });
-
-            test('should remove user from list', () => {
-                const userList = ['User1', 'User2', 'User3'];
-                const updatedList = userList.filter(u => u !== 'User2');
-                expect(updatedList.length).toBe(2);
-            });
-        });
-
-        describe('Difficulty Settings', () => {
-            test('should save difficulty per user', () => {
-                testLocalStorage.clear();
-                const settings = { difficulty: 'hard' };
-                testLocalStorage.setItem('TestUserSettings', JSON.stringify(settings));
-                const retrieved = JSON.parse(testLocalStorage.getItem('TestUserSettings'));
-                expect(retrieved.difficulty).toBe('hard');
-                testLocalStorage.clear();
-            });
-
-            test('should generate numbers within easy range', () => {
-                const range = { min: 0, max: 5 };
-                const num = Math.floor(Math.random() * (range.max - range.min + 1)) + range.min;
-                expect(num).toBeGreaterThanOrEqual(0);
-                expect(num).toBeLessThanOrEqual(5);
-            });
-
-            test('should generate numbers within hard range', () => {
-                const range = { min: 0, max: 12 };
-                const num = Math.floor(Math.random() * (range.max - range.min + 1)) + range.min;
-                expect(num).toBeGreaterThanOrEqual(0);
-                expect(num).toBeLessThanOrEqual(12);
-            });
-        });
-
-        describe('Game Logic', () => {
-            test('should calculate correct answer', () => {
-                expect(5 * 7).toBe(35);
-                expect(12 * 12).toBe(144);
-            });
-
-            test('should calculate accuracy percentage', () => {
-                const correct = 8;
-                const missed = 2;
-                const accuracy = Math.round((correct / (correct + missed)) * 100);
-                expect(accuracy).toBe(80);
-            });
-
-            test('should handle 100% accuracy', () => {
-                const correct = 10;
-                const missed = 0;
-                const accuracy = Math.round((correct / (correct + missed)) * 100);
-                expect(accuracy).toBe(100);
-            });
-
-            test('should track problem history', () => {
-                const history = [];
-                history.push({ top: 5, bottom: 3, answer: 15, wasCorrect: true });
-                history.push({ top: 7, bottom: 4, answer: 28, wasCorrect: false });
-                expect(history.length).toBe(2);
-            });
-
-            test('should filter mistakes', () => {
-                const history = [
-                    { wasCorrect: true },
-                    { wasCorrect: false },
-                    { wasCorrect: false }
-                ];
-                const mistakes = history.filter(p => !p.wasCorrect);
-                expect(mistakes.length).toBe(2);
-            });
-        });
-
-        describe('Progress Tracking', () => {
-            test('should calculate progress percentage', () => {
-                const percentage = (5 / 10) * 100;
-                expect(percentage).toBe(50);
-            });
-
-            test('should format progress text', () => {
-                const text = `Problem ${3} of ${10}`;
-                expect(text).toBe('Problem 3 of 10');
-            });
-        });
-
-        describe('Sound System', () => {
-            test('should default to sounds enabled', () => {
-                testLocalStorage.clear();
-                const enabled = testLocalStorage.getItem('soundsEnabled') !== 'false';
-                expect(enabled).toBe(true);
-                testLocalStorage.clear();
-            });
-
-            test('should toggle sound state', () => {
-                let enabled = true;
-                enabled = !enabled;
-                expect(enabled).toBe(false);
-            });
-
-            test('should save sound preference', () => {
-                testLocalStorage.clear();
-                testLocalStorage.setItem('soundsEnabled', 'false');
-                expect(testLocalStorage.getItem('soundsEnabled')).toBe('false');
-                testLocalStorage.clear();
-            });
-        });
-
-        describe('Game Logging', () => {
-            test('should save game log', () => {
-                testLocalStorage.clear();
-                const log = { Date: new Date().toISOString(), NumberWrong: 2, TotalTime: 45.5 };
-                testLocalStorage.setItem('TestUserLog', JSON.stringify([log]));
-                const retrieved = JSON.parse(testLocalStorage.getItem('TestUserLog'));
-                expect(retrieved.length).toBe(1);
-                testLocalStorage.clear();
-            });
-
-            test('should append to existing log', () => {
-                testLocalStorage.clear();
-                const logs = [{ NumberWrong: 1 }];
-                logs.push({ NumberWrong: 2 });
-                expect(logs.length).toBe(2);
-                testLocalStorage.clear();
-            });
-        });
-
-        describe('Input Validation', () => {
-            test('should parse integer from string', () => {
-                expect(parseInt('42')).toBe(42);
-            });
-
-            test('should trim whitespace', () => {
-                expect('  Test  '.trim()).toBe('Test');
-            });
-        });
-
-        describe('Time Tracking', () => {
-            test('should calculate elapsed time', () => {
-                const elapsed = (46000 - 1000) / 1000;
-                expect(elapsed).toBe(45);
-            });
-
-            test('should round time', () => {
-                expect(Math.round(45.7)).toBe(46);
-            });
-        });
-
-        // Display results
         function displayResults() {
             const resultsDiv = document.getElementById('test-results');
             let totalTests = 0;
@@ -432,9 +598,6 @@
                 summaryDiv.style.background = 'linear-gradient(135deg, #dc3545 0%, #c82333 100%)';
             }
         }
-
-        // Run after page load
-        window.addEventListener('load', displayResults);
     </script>
 </body>
 </html>
