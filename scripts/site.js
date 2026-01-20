@@ -269,7 +269,7 @@ class MagicMath {
     const difficulty = this.getUserDifficulty();
     const range = this.difficultySettings[difficulty];
 
-    const topNum = x; //Math.floor(Math.random() * (range.max - range.min + 1)) + range.min;
+    const topNum = Math.floor(Math.random() * (range.max - range.min + 1)) + range.min;
     const bottomNum = Math.floor(Math.random() * (range.max - range.min + 1)) + range.min;
 
     // Store current problem
@@ -761,9 +761,11 @@ class MagicMath {
   }
 }
 
-// Initialize app when DOM is ready
+// Initialize app when DOM is ready (skip if in test mode)
 document.addEventListener('DOMContentLoaded', () => {
-  window.magicMath = new MagicMath();
+  if (!window.isTestMode) {
+    window.magicMath = new MagicMath();
+  }
 });
 
 // Export for testing
