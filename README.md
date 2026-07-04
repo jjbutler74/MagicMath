@@ -2,6 +2,8 @@
 
 Magic Math is a modern web-based multiplication practice game designed to help students master their times tables. Built with HTML, CSS, ES6+ JavaScript, Bootstrap 5, and Chart.js 4, the game presents random multiplication problems, tracks performance using browser's local storage, and displays interactive performance charts.
 
+🔗 **[Play the live site](https://jasonbutler.com/magicmath/)**
+
 ## Features
 
 - **Multiple Difficulty Levels**: Easy (0-5), Medium (0-10), and Hard (0-12) ranges
